@@ -224,7 +224,7 @@ class NetworkVisualizer {
 
     setSimulationState(state) {
         this.simulationPhase = state.phase || "NORMAL";
-        this.selectedFault = state.fault || null;
+        this.selectedFault = state.fault || state.selectedFault || null;
         this.activeNode = state.activeNode || state.currentNode || null;
         this.boundaryValves = new Set(state.boundaryValves || []);
         this.closedValves = new Set(state.closedValves || []);

@@ -429,6 +429,7 @@ class SimulationController {
         if (autoPlay && this.state.speedMultiplier <= 4.5) {
             this.play(() => {
                 this.state.phase = "COMPLETE";
+                this.state.activeNode = null;
                 this.visualizer.setSimulationState(this.state);
                 if (this.ui.onStateChange) this.ui.onStateChange(this.state);
                 if (onComplete) onComplete();
@@ -437,6 +438,7 @@ class SimulationController {
             // Instant execution
             this.goToStep(this.currentSteps.length - 1);
             this.state.phase = "COMPLETE";
+            this.state.activeNode = null;
             this.visualizer.setSimulationState(this.state);
             if (this.ui.onStateChange) this.ui.onStateChange(this.state);
             if (onComplete) onComplete();
@@ -533,6 +535,7 @@ class SimulationController {
                 }
             } else if (this.currentPhaseNum === 2) {
                 this.state.phase = "COMPLETE";
+                this.state.activeNode = null;
                 this.visualizer.setSimulationState(this.state);
                 if (this.ui.onStateChange) this.ui.onStateChange(this.state);
                 if (this.ui.onLogMessage) {
@@ -599,6 +602,7 @@ class SimulationController {
                     }
                 } else if (this.currentPhaseNum === 2) {
                     this.state.phase = "COMPLETE";
+                    this.state.activeNode = null;
                     this.visualizer.setSimulationState(this.state);
                     if (this.ui.onStateChange) this.ui.onStateChange(this.state);
                 }
