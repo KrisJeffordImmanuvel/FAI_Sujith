@@ -44,15 +44,32 @@ class SimulationController {
     }
 
     /**
-     * Python API base URL. When the page itself is served by backend/app.py (port 5000)
-     * use the same origin (also works from a phone on the LAN); otherwise use localhost:5000.
+     * Finds where the Python REST API is running. First tries the server that served this
+     * page (backend/app.py locally, on a phone over Wi-Fi, or on Render), then localhost:5000
+     * (e.g. when the page is opened from Netlify or another static server). Cached once found.
      */
-    getApiBase() {
-        if (typeof window !== "undefined" && window.location &&
-            window.location.protocol.startsWith("http") && window.location.port === "5000") {
-            return window.location.origin;
+    async resolveApiBase() {
+        if (this.apiBase) return this.apiBase;
+        const candidates = [];
+        if (typeof window !== "undefined" && window.location && window.location.protocol.startsWith("http")) {
+            candidates.push(window.location.origin);
         }
-        return "http://localhost:5000";
+        if (!candidates.includes("http://localhost:5000")) candidates.push("http://localhost:5000");
+
+        for (const base of candidates) {
+            try {
+                const resp = await this.fetchWithTimeout(`${base}/api/status`);
+                if (!resp.ok) continue;
+                const data = await resp.json();
+                if (data && data.status === "online") {
+                    this.apiBase = base;
+                    return base;
+                }
+            } catch (e) {
+                // not reachable at this address, try the next one
+            }
+        }
+        return null;
     }
 
     /** Fetch with a short timeout so an unreachable server never stalls the simulation. */
@@ -68,19 +85,15 @@ class SimulationController {
 
     /** Returns true if the Python REST API answers /api/status. */
     async checkServer() {
-        try {
-            const resp = await this.fetchWithTimeout(`${this.getApiBase()}/api/status`);
-            if (!resp.ok) return false;
-            const data = await resp.json();
-            return data && data.status === "online";
-        } catch (e) {
-            return false;
-        }
+        this.apiBase = null; // re-detect each time the Python engine is selected
+        return (await this.resolveApiBase()) !== null;
     }
 
     /** POSTs to the Python API and returns the result in the same shape as the JS engine. */
     async callPythonEngine(path, body, phase) {
-        const resp = await this.fetchWithTimeout(`${this.getApiBase()}${path}`, {
+        const base = await this.resolveApiBase();
+        if (!base) throw new Error("Python API not reachable");
+        const resp = await this.fetchWithTimeout(`${base}${path}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
@@ -136,6 +149,7 @@ class SimulationController {
 
     /** Called whenever the Python engine was selected but could not be used. */
     reportServerUnreachable() {
+        this.apiBase = null; // look again next time
         const msg = "Server not reachable – using browser engine";
         if (this.ui.onEngineStatus) this.ui.onEngineStatus("fallback");
         if (this.ui.onError) this.ui.onError(msg);
@@ -145,7 +159,7 @@ class SimulationController {
     async setEngineMode(mode) {
         this.state.engineMode = mode;
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`Algorithm engine selected: ${mode === "python" ? "Python REST API (localhost:5000)" : "In-browser JavaScript"}`);
+            this.ui.onLogMessage(`Algorithm engine selected: ${mode === "python" ? "Python REST API (backend server)" : "In-browser JavaScript"}`);
         }
         if (mode !== "python") {
             if (this.ui.onEngineStatus) this.ui.onEngineStatus("js");

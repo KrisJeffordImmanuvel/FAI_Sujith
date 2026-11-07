@@ -23,7 +23,8 @@ from bfs_engine import (
     generate_isolation_report
 )
 
-PORT = 5000
+# Render (and similar hosts) tell the app which port to use via $PORT; locally it stays 5000.
+PORT = int(os.environ.get("PORT", "5000"))
 HOST = "0.0.0.0"
 
 def get_local_ip():

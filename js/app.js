@@ -739,7 +739,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const badge = document.getElementById("backend-health-pill");
         if (!badge) return;
         if (status === "python") {
-            badge.innerHTML = `<span class="dot-online"></span> Python API Engine (Port 5000)`;
+            badge.innerHTML = `<span class="dot-online"></span> Python API Engine Online`;
             badge.className = "engine-health-badge badge-online";
         } else if (status === "fallback") {
             badge.innerHTML = `<span class="dot-offline"></span> Server not reachable – using browser engine`;

@@ -1,0 +1,2 @@
+# No third-party packages are needed: backend/app.py uses only the Python standard library.
+# This file exists so hosting platforms (e.g. Render) can run "pip install -r requirements.txt".
