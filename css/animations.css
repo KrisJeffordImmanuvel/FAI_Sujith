@@ -1,0 +1,211 @@
+/* ==========================================================================
+   Campus Water-Pipeline Fault Isolation Tool Using BFS
+   Animations & Hydraulic Dynamic Effects
+   ========================================================================== */
+
+/* 1. Animated Pressurized Water Flow */
+.flow-pulse-animation {
+    stroke-dasharray: 8, 14;
+    animation: waterFlowPulse 1.2s linear infinite;
+}
+
+@keyframes waterFlowPulse {
+    from {
+        stroke-dashoffset: 44;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* 2. Pipeline Fault Rupture Pulse */
+.pipeline-faulty {
+    animation: faultLineFlash 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes faultLineFlash {
+    0% {
+        stroke: #ef4444;
+        stroke-width: 7;
+        opacity: 0.9;
+    }
+    100% {
+        stroke: #b91c1c;
+        stroke-width: 10;
+        opacity: 1;
+    }
+}
+
+/* Burst Marker Pulse */
+.burst-pulse-circle {
+    fill: #ef4444;
+    opacity: 0.4;
+    animation: burstAuraPulse 1s ease-out infinite;
+}
+
+@keyframes burstAuraPulse {
+    0% {
+        r: 10;
+        opacity: 0.8;
+    }
+    100% {
+        r: 28;
+        opacity: 0;
+    }
+}
+
+/* Leak Spray Animation */
+.leak-spray-animation {
+    animation: sprayShake 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes sprayShake {
+    0% {
+        transform: rotate(-4deg) scale(0.95);
+    }
+    100% {
+        transform: rotate(4deg) scale(1.1);
+    }
+}
+
+/* 3. Valve States */
+.valve-open-spin {
+    transform-origin: center;
+    transition: transform 0.4s ease;
+}
+
+.valve-boundary-alert {
+    transform-origin: center;
+    animation: valveAlertPulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes valveAlertPulse {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.2);
+    }
+}
+
+.valve-beacon-aura {
+    animation: beaconAura 1.2s infinite ease-out;
+}
+
+@keyframes beaconAura {
+    0% {
+        r: 18;
+        opacity: 0.6;
+    }
+    100% {
+        r: 36;
+        opacity: 0;
+    }
+}
+
+.valve-locked {
+    transform-origin: center;
+    animation: lockedShake 0.4s ease;
+}
+
+@keyframes lockedShake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+/* 4. Water Tower Reservoir Ripple */
+.source-ripple-ring {
+    fill: none;
+    stroke: #38bdf8;
+    stroke-width: 2;
+    animation: reservoirRipple 2.2s infinite ease-out;
+}
+
+@keyframes reservoirRipple {
+    0% {
+        r: 26;
+        opacity: 0.9;
+    }
+    100% {
+        r: 48;
+        opacity: 0;
+    }
+}
+
+/* 5. Building Droplet Glow */
+.building-supplied {
+    transition: all 0.3s ease;
+}
+
+.building-deprived {
+    transition: all 0.3s ease;
+    filter: grayscale(0.5);
+}
+
+.building-deprived rect {
+    stroke-dasharray: 4, 4;
+}
+
+/* 6. General UI Transitions */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 7. Active BFS Node Ring Pulse */
+.active-node-halo-pulse {
+    fill: none;
+    stroke: #f59e0b;
+    stroke-width: 3.5;
+    stroke-dasharray: 4, 3;
+    animation: activeNodeRotate 3s linear infinite, activeHaloPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes activeNodeRotate {
+    from { stroke-dashoffset: 28; }
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes activeHaloPulse {
+    0% {
+        r: 34;
+        opacity: 0.7;
+    }
+    100% {
+        r: 42;
+        opacity: 1;
+        stroke: #d97706;
+    }
+}
+
+@keyframes activePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(2, 132, 199, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
+    }
+}
+
+

@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Water-Pipeline Fault Isolation Tool (BFS) | Karunya AI</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- CSS Stylesheets -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand-wrapper">
+                <div class="brand-logo-icon">💧</div>
+                <div>
+                    <div class="brand-title">Campus Water-Pipeline Fault Isolation Tool</div>
+                    <div class="brand-subtitle">Breadth-First Search (BFS) Algorithmic Engine &bull; Karunya (25DC204)</div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="nav-links">
+                <a href="#dashboard" class="nav-link active" data-tab="tab-dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Dashboard
+                </a>
+                <a href="#simulation" class="nav-link" data-tab="tab-simulation">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Interactive Simulation
+                </a>
+                <a href="#inspector" class="nav-link" data-tab="tab-inspector">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    Algorithm Visualizer
+                </a>
+                <a href="#theory" class="nav-link" data-tab="tab-theory">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    BFS Algorithm Theory
+                </a>
+                <a href="#report" class="nav-link" data-tab="tab-report">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Isolation Report
+                </a>
+                <a href="#about" class="nav-link" data-tab="tab-about">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    About & Team
+                </a>
+            </nav>
+
+            <!-- Backend Status & Engine Selector -->
+            <div class="nav-right-controls">
+                <div id="backend-health-pill" class="engine-health-badge badge-client">
+                    <span class="dot-offline"></span> Browser JS Engine Active
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+
+        <!-- ===================================================================
+             TAB 1: DASHBOARD
+             =================================================================== -->
+        <section id="tab-dashboard" class="tab-pane active">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <span>💧 Campus Water Distribution Dashboard</span>
+                </h1>
+                <p class="page-subtitle">
+                    Automated Fault Isolation & Boundary Valve Discovery using Two-Phase Breadth-First Search (BFS)
+                </p>
+            </div>
+
+            <!-- KPI Row -->
+            <div class="kpi-row">
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Network Nodes</span>
+                        <span class="kpi-stat-icon">📍</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-total-nodes">15</div>
+                    <div class="kpi-stat-sub">1 Source &bull; 5 Junctions &bull; 4 Valves &bull; 5 Buildings</div>
+                </div>
+
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Pipelines</span>
+                        <span class="kpi-stat-icon">🚰</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-total-pipes">17</div>
+                    <div class="kpi-stat-sub">Ring Mains & Lateral Feeds</div>
+                </div>
+
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Isolation Valves</span>
+                        <span class="kpi-stat-icon">⚙️</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-total-valves">4</div>
+                    <div class="kpi-stat-sub">V1, V2, V3, V4 Guard Gates</div>
+                </div>
+
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Campus Facilities</span>
+                        <span class="kpi-stat-icon">🏫</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-total-buildings">5</div>
+                    <div class="kpi-stat-sub">Hostel, Lab, Canteen, Academic, Library</div>
+                </div>
+
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Network Status</span>
+                        <span class="kpi-stat-icon">📡</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-network-status">
+                        <span class="status-pill status-normal">● NORMAL</span>
+                    </div>
+                    <div class="kpi-stat-sub">All buildings connected</div>
+                </div>
+
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Detected Faults</span>
+                        <span class="kpi-stat-icon">⚠️</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-faults-count">0</div>
+                    <div class="kpi-stat-sub">Rupture Incidents</div>
+                </div>
+
+                <div class="kpi-stat-card">
+                    <div class="kpi-stat-top">
+                        <span class="kpi-stat-title">Affected Buildings</span>
+                        <span class="kpi-stat-icon">🚫</span>
+                    </div>
+                    <div class="kpi-stat-val" id="metric-affected-count">0</div>
+                    <div class="kpi-stat-sub">Deprived of Supply</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Split Layout -->
+            <div class="dashboard-grid">
+                <!-- Overview & Project Summary Card -->
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h2 class="card-title">
+                            <span>🎯 Project Objective & Engineering Scope</span>
+                        </h2>
+                        <span class="status-pill status-normal">Simulation Mode</span>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+                        This web-based tool simulates a college campus water distribution network and applies the 
+                        <strong>Breadth-First Search (BFS)</strong> graph traversal algorithm to solve the critical municipal challenge of 
+                        <strong>pipe rupture fault isolation</strong>.
+                    </p>
+
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
+                        <h4 style="color: #166534; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem;">Key Engineering Objectives:</h4>
+                        <ul style="padding-left: 1.25rem; font-size: 0.88rem; color: #15803d; line-height: 1.5;">
+                            <li><strong>Rapid Water Loss Mitigation:</strong> Pinpoint damaged pipelines and close boundary valves automatically.</li>
+                            <li><strong>Localized Interruption:</strong> BFS finds the nearest valves that isolate the rupture (fewest hops), so valves further away stay open.</li>
+                            <li><strong>Supply Check:</strong> A second BFS from the water tower shows which buildings are still connected through open pipes.</li>
+                        </ul>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-primary" data-action="quick-simulate">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Open Interactive Simulation
+                        </button>
+                        <button class="btn btn-outline" id="btn-sample-network">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            Load Sample Fault Incident
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Academic Affiliation Card -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <span>🎓 Institutional Profile</span>
+                    </h2>
+                    <div style="margin-top: 1rem; font-size: 0.88rem; line-height: 1.6;">
+                        <p style="margin-bottom: 0.5rem;"><strong>Institution:</strong> Karunya Institute of Technology and Sciences</p>
+                        <p style="margin-bottom: 0.5rem;"><strong>Course:</strong> Fundamentals of Artificial Intelligence</p>
+                        <p style="margin-bottom: 0.5rem;"><strong>Course Code:</strong> <code>25DC204</code></p>
+                        <p style="margin-bottom: 0.5rem;"><strong>Academic Year:</strong> 2026–2027</p>
+                        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.75rem 0;">
+                        <p style="font-weight: 700; color: var(--deep-navy); margin-bottom: 0.35rem;">Micro-Project Team:</p>
+                        <ol style="padding-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+                            <li>Dabria Susan Sam</li>
+                            <li>G Revanth Hari</li>
+                            <li>Sujith S.</li>
+                            <li>Leah Sasha V.L.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demonstration Scenarios Grid -->
+            <div class="card">
+                <div class="card-header-flex">
+                    <h2 class="card-title">
+                        <span>🔬 Pre-Configured Demonstration Fault Scenarios</span>
+                    </h2>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Select any scenario to evaluate algorithmic response</span>
+                </div>
+                <div id="scenarios-list" class="scenarios-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Worst Single Fault Analysis -->
+            <div class="card" id="worst-fault-card" style="margin-top: 1.5rem;">
+                <div class="card-header-flex">
+                    <h2 class="card-title">
+                        <span>🧮 Worst Single Fault Analysis</span>
+                    </h2>
+                    <button class="btn btn-primary btn-sm" id="btn-worst-fault">Find Worst Single Fault</button>
+                </div>
+                <p class="worst-intro">
+                    Simulates a rupture on every pipe, one at a time, with the browser BFS engine and ranks the pipes by how many buildings lose supply.
+                </p>
+                <div id="worst-fault-results"></div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             TAB 2: INTERACTIVE SIMULATION & GRAPH
+             =================================================================== -->
+        <section id="tab-simulation" class="tab-pane">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <span>🕹️ Interactive Campus Water Network Simulation</span>
+                </h1>
+                <p class="page-subtitle">
+                    Pick a pipe to break, then follow the 5 steps below to run the two-phase BFS step-by-step.
+                </p>
+            </div>
+
+            <div class="sim-layout-grid">
+                <!-- Left Sidebar: Controls & Steps -->
+                <div class="sim-sidebar">
+                    <!-- Fault Selection Card -->
+                    <div class="card">
+                        <h3 class="card-title" style="font-size: 1rem;">
+                            <span>⚠️ Step 1: Select Pipe</span>
+                        </h3>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                            Pick the broken pipe by ID, by its two endpoints, or by clicking it in the graph.
+                        </p>
+
+                        <div class="form-group">
+                            <label class="form-label">Endpoint 1 (Node A)</label>
+                            <select id="endpoint-u-select" class="form-select"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Endpoint 2 (Node B)</label>
+                            <select id="endpoint-v-select" class="form-select"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Or Select by Pipeline ID</label>
+                            <select id="fault-pipe-select" class="form-select"></select>
+                        </div>
+
+                        <button id="btn-detect-fault" class="btn btn-danger btn-block">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            <span><strong>Step 1:</strong> Select Pipe (Mark Rupture)</span>
+                        </button>
+                    </div>
+
+                    <!-- Step-by-Step Workflow Card -->
+                    <div class="card">
+                        <h3 class="card-title" style="font-size: 1rem;">
+                            <span>🪜 Guided BFS Workflow</span>
+                        </h3>
+
+                        <div class="step-wizard">
+                            <div class="step-indicator-item" id="step-wiz-1">
+                                <span class="step-num-badge">1</span>
+                                <span class="step-text">Select pipe</span>
+                            </div>
+                            <div class="step-indicator-item" id="step-wiz-2">
+                                <span class="step-num-badge">2</span>
+                                <span class="step-text">Find boundary valves <small>(1st BFS)</small></span>
+                            </div>
+                            <div class="step-indicator-item" id="step-wiz-3">
+                                <span class="step-num-badge">3</span>
+                                <span class="step-text">Close valves</span>
+                            </div>
+                            <div class="step-indicator-item" id="step-wiz-4">
+                                <span class="step-num-badge">4</span>
+                                <span class="step-text">Check supply <small>(2nd BFS)</small></span>
+                            </div>
+                            <div class="step-indicator-item" id="step-wiz-5">
+                                <span class="step-num-badge">5</span>
+                                <span class="step-text">Report</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                            <button id="btn-run-first-bfs" class="btn btn-warning btn-block">
+                                <strong>Step 2:</strong> Find Boundary Valves
+                            </button>
+                            <button id="btn-close-valves" class="btn btn-secondary btn-block">
+                                <strong>Step 3:</strong> Close Valves
+                            </button>
+                            <button id="btn-run-second-bfs" class="btn btn-primary btn-block">
+                                <strong>Step 4:</strong> Check Supply
+                            </button>
+                            <button id="btn-gen-report" class="btn btn-success btn-block">
+                                <strong>Step 5:</strong> Report
+                            </button>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.9rem 0;">
+
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="btn-start-full-sim" class="btn btn-primary" style="flex: 2;">
+                                ⚡ Full Simulation
+                            </button>
+                            <button id="btn-reset-network" class="btn btn-secondary" style="flex: 1;" title="Restore default state">
+                                🔄 Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Speed & Engine Settings -->
+                    <div class="card">
+                        <h3 class="card-title" style="font-size: 0.9rem;">
+                            <span>⚙️ Execution Parameters</span>
+                        </h3>
+                        <div class="form-group" style="margin-top: 0.5rem;">
+                            <label class="form-label">Animation Speed</label>
+                            <select id="sim-speed-select" class="form-select">
+                                <option value="0.5">0.5x (Slow - Educational)</option>
+                                <option value="1.0" selected>1.0x (Normal)</option>
+                                <option value="2.0">2.0x (Fast)</option>
+                                <option value="5.0">Instant (No Delays)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Algorithm Engine</label>
+                            <select id="engine-mode-select" class="form-select">
+                                <option value="js" selected>Browser JS Engine (default)</option>
+                                <option value="python">Python REST API (backend server)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Canvas: SVG Network Graph -->
+                <div class="visualizer-card">
+                    <div class="visualizer-toolbar">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 0.9rem; font-weight: 700; color: var(--deep-navy);">Interactive Campus Water Network Graph</span>
+                            <span class="status-pill status-processing" style="font-size: 0.7rem;">Click pipes to break &bull; Drag nodes</span>
+                        </div>
+                        <div class="toolbar-hint toolbar-hint-desktop">
+                            Scroll to Zoom &bull; Drag background to Pan
+                        </div>
+                        <div class="toolbar-hint toolbar-hint-phone">
+                            Swipe sideways to see the whole network
+                        </div>
+                    </div>
+
+                    <div id="network-canvas-container" class="visualizer-wrapper">
+                        <!-- Rendered by visualizer.js -->
+                    </div>
+
+                    <!-- Map Legend -->
+                    <div class="graph-legend" aria-label="Legend">
+                        <span class="legend-item"><span class="lg-pipe"></span> Normal pipe</span>
+                        <span class="legend-item"><span class="lg-pipe lg-pipe-ruptured"></span> Ruptured pipe</span>
+                        <span class="legend-item"><span class="lg-valve"></span> Open valve</span>
+                        <span class="legend-item"><span class="lg-valve lg-valve-closed"></span> Closed valve</span>
+                        <span class="legend-item"><span class="lg-building"></span> Supplied building</span>
+                        <span class="legend-item"><span class="lg-building lg-building-cut"></span> Cut-off building</span>
+                    </div>
+
+                    <!-- Step-by-Step Playback Controls Bar -->
+                    <div class="simulation-playback-bar">
+                        <div class="playback-controls-group">
+                            <button id="btn-step-prev" class="btn btn-playback" title="Previous Step (Left Arrow)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                                <span>Prev</span>
+                            </button>
+                            <button id="btn-play-pause" class="btn btn-playback btn-playback-play" title="Play / Pause Animation (Spacebar)">
+                                <span id="play-pause-icon">▶</span>
+                                <span id="play-pause-text">Play</span>
+                            </button>
+                            <button id="btn-step-next" class="btn btn-playback" title="Next Step (Right Arrow)">
+                                <span>Next</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                            </button>
+                            <button id="btn-playback-reset" class="btn btn-playback" title="Reset Network & Animation (R)">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+
+                        <!-- Step Progress & Phase Badge -->
+                        <div class="playback-progress-group">
+                            <div class="playback-meta-row">
+                                <span id="playback-phase-badge" class="badge-status badge-info">Phase: Ready</span>
+                                <span id="playback-step-counter" class="step-counter-text">Step 0 / 0</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div id="playback-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Impact Panel (shown after each completed simulation) -->
+            <div class="card impact-panel" id="impact-panel" style="display: none;">
+                <div class="card-header-flex">
+                    <h3 class="card-title" style="font-size: 1.05rem;">
+                        <span>📊 Impact of This Rupture</span>
+                    </h3>
+                    <span id="impact-pipe-tag" class="status-pill status-fault"></span>
+                </div>
+                <div class="impact-grid">
+                    <div class="impact-stat impact-stat-red">
+                        <div class="impact-label">Buildings cut off</div>
+                        <div class="impact-value" id="impact-buildings-count">0 / 5</div>
+                        <div class="impact-sub" id="impact-buildings-list">None</div>
+                    </div>
+                    <div class="impact-stat impact-stat-amber">
+                        <div class="impact-label">Valves closed</div>
+                        <div class="impact-value" id="impact-valves-count">0</div>
+                        <div class="impact-sub" id="impact-valves-list">None</div>
+                    </div>
+                    <div class="impact-stat impact-stat-blue">
+                        <div class="impact-label">BFS steps taken</div>
+                        <div class="impact-value" id="impact-steps-total">0</div>
+                        <div class="impact-sub" id="impact-steps-split"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-Time Algorithm State & Telemetry Dock (Live under Graph) -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header-flex">
+                    <h3 class="card-title" style="font-size: 1.05rem;">
+                        <span>⚡ Real-Time BFS Algorithmic Telemetry & Queue Monitor</span>
+                    </h3>
+                    <span id="sim-live-phase-tag" class="status-pill status-normal">Baseline Ready</span>
+                </div>
+
+                <!-- Live Step Action Banner -->
+                <div class="live-action-banner" id="sim-live-action-banner">
+                    <div class="action-pulse-dot"></div>
+                    <div class="action-text-wrapper">
+                        <strong id="sim-live-action-title">System Status:</strong>
+                        <span id="sim-live-action-text">Step 1: select a pipe (or click one in the graph), then work through Steps 2–5.</span>
+                    </div>
+                </div>
+
+                <!-- 3-Column Telemetry Grid: Queue, Visited Nodes, Traversal Order -->
+                <div class="sim-telemetry-grid">
+                    <!-- Column 1: Live FIFO Queue -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span class="telemetry-card-title">📥 FIFO Queue Visualizer</span>
+                            <span class="telemetry-card-badge" id="sim-queue-count">0 items</span>
+                        </div>
+                        <div class="telemetry-queue-wrapper" id="sim-live-queue">
+                            <span class="queue-empty">[ Empty Queue ]</span>
+                        </div>
+                        <div class="telemetry-hint">Items enter from right (enqueue) and exit from left (dequeue).</div>
+                    </div>
+
+                    <!-- Column 2: Visited Nodes -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span class="telemetry-card-title">👁️ Visited Nodes</span>
+                            <span class="telemetry-card-badge" id="sim-visited-count">0 visited</span>
+                        </div>
+                        <div class="telemetry-chip-list" id="sim-live-visited">
+                            <span class="text-muted" style="font-size: 0.8rem;">None visited yet</span>
+                        </div>
+                        <div class="telemetry-hint">Explored components tracked in HashSet to prevent cycles.</div>
+                    </div>
+
+                    <!-- Column 3: Traversal Order -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span class="telemetry-card-title">👣 Traversal Order</span>
+                            <span class="telemetry-card-badge" id="sim-traversal-count">0 steps</span>
+                        </div>
+                        <div class="telemetry-chip-list" id="sim-live-traversal">
+                            <span class="text-muted" style="font-size: 0.8rem;">No traversal sequence yet</span>
+                        </div>
+                        <div class="telemetry-hint">Level-by-level BFS expansion sequence.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             TAB 3: ALGORITHM VISUALIZER & INSPECTOR
+             =================================================================== -->
+        <section id="tab-inspector" class="tab-pane">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <span>🔍 Real-Time BFS Algorithm Inspector</span>
+                </h1>
+                <p class="page-subtitle">
+                    Transparent FIFO Queue monitoring, parent pointers, visited state tracking, and branch pruning logic.
+                </p>
+            </div>
+
+            <!-- Queue Snapshot Card -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h2 class="card-title" style="margin-bottom: 0.5rem;">
+                    <span>📥 Active FIFO Queue Status</span>
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    Level-order expansion: nodes enter the tail of the queue and are dequeued from the head.
+                </p>
+
+                <div class="queue-box-container">
+                    <div class="queue-label-bar">
+                        <span>Front of Queue (Next to Dequeue)</span>
+                        <span>End of Queue (Recently Enqueued)</span>
+                    </div>
+                    <div id="live-queue-display" class="queue-items-wrapper">
+                        <span class="queue-empty">[ Empty Queue — Waiting for simulation to begin ]</span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Current Node Being Expanded:</span>
+                        <div id="live-current-node" style="font-size: 1.25rem; font-weight: 800; color: var(--primary-blue); margin-top: 0.2rem;">None</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Discovered Boundary Valves:</span>
+                        <div id="live-valves-display" style="margin-top: 0.35rem;">
+                            <span class="text-muted" style="font-size: 0.85rem;">None</span>
+                        </div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Visited Nodes:</span>
+                        <div id="live-visited-display" style="margin-top: 0.35rem; max-height: 48px; overflow-y: auto;">
+                            <span class="text-muted" style="font-size: 0.85rem;">None</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-top: 1rem;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Live Traversal Sequence (Breadth-First Exploration Path):</span>
+                    <div id="inspector-live-traversal" style="margin-top: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;">
+                        <span class="text-muted" style="font-size: 0.85rem;">No traversal sequence yet</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traversal Event Log -->
+            <div class="card">
+                <div class="card-header-flex">
+                    <h2 class="card-title">
+                        <span>📜 Step-by-Step Traversal Event Log</span>
+                    </h2>
+                    <span id="live-step-message" style="font-size: 0.85rem; font-weight: 600; color: var(--primary-blue);">Ready</span>
+                </div>
+                <div id="algorithm-log-list" class="log-box">
+                    <div class="log-entry">
+                        <span class="log-time">[System]</span>
+                        <span class="log-msg">BFS engine ready. Step 1: select a pipe, then Step 2: Find Boundary Valves.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             TAB 4: BFS ALGORITHM THEORY & LAB
+             =================================================================== -->
+        <section id="tab-theory" class="tab-pane">
+            <div class="theory-container">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <span>📚 BFS Algorithmic Foundations & Mathematical Formulation</span>
+                    </h1>
+                    <p class="page-subtitle">
+                        How the campus network is modelled as a graph, and what the two BFS passes do (and do not) compute.
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h2 class="theory-title">1. Graph Representation of Campus Water Distribution Network</h2>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                        The campus water network is modelled as an <strong>undirected, unweighted graph</strong>:
+                        <br>
+                        <strong><em>G</em> = (<em>V</em>, <em>E</em>)</strong>, where:
+                    </p>
+                    <ul style="padding-left: 1.5rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                        <li><strong>Vertices (<em>V</em>):</strong> The network components, in 4 groups:
+                            <ul>
+                                <li><em>V</em><sub>source</sub> = { WT } — Primary elevated water tower.</li>
+                                <li><em>V</em><sub>junction</sub> = { J1, J2, J3, J4, J5 } — Distribution manifolds.</li>
+                                <li><em>V</em><sub>valve</sub> = { V1, V2, V3, V4 } — Isolation valves (one on each building branch).</li>
+                                <li><em>V</em><sub>building</sub> = { Hostel, Laboratory, Canteen, Academic, Library } — Consumer buildings.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Edges (<em>E</em>):</strong> The 17 pipes, each connecting a pair of nodes (<em>u</em>, <em>v</em>). Each pipe also stores a length (m), diameter (mm) and design flow (L/min) for display and the report, but <strong>BFS ignores these values</strong>: every pipe counts as exactly one hop.</li>
+                    </ul>
+                </div>
+
+                <div class="theory-card">
+                    <h2 class="theory-title">2. What BFS Finds Here (and What It Does Not)</h2>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                        BFS is unweighted: it counts <strong>hops</strong> (pipes crossed), not metres, litres or bar.
+                    </p>
+                    <div style="background: #eff6ff; border-left: 4px solid var(--primary-blue); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                        <h4 style="color: var(--primary-dark); font-weight: 700; margin-bottom: 0.35rem;">What it finds:</h4>
+                        <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.5;">
+                            <strong>BFS finds the nearest valves that isolate the rupture (fewest hops).</strong>
+                            It explores outwards from both ends of the broken pipe one level at a time and stops each branch at the first valve it meets,
+                            so a valve further out along the same branch is never closed.
+                        </p>
+                    </div>
+                    <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                        <h4 style="color: #92400e; font-weight: 700; margin-bottom: 0.35rem;">What it does not do:</h4>
+                        <ul style="font-size: 0.88rem; color: #92400e; line-height: 1.5; padding-left: 1.25rem;">
+                            <li>It does not use pipe length, diameter or flow, so "nearest" means fewest pipes, not shortest distance.</li>
+                            <li>It does not promise the fewest buildings cut off; that depends on where valves are installed.
+                                In this network the loop pipes have no valves, so a rupture on any loop or junction pipe closes all four valves.</li>
+                            <li>It does not simulate flow rates or water pressure. "Supplied" only means a building is still connected to the water tower by open pipes.</li>
+                        </ul>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                        Time Complexity: <strong><em>O</em>(<em>V</em> + <em>E</em>)</strong> | Space Complexity: <strong><em>O</em>(<em>V</em>)</strong>
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h2 class="theory-title">3. Step 2 – First BFS: Find Boundary Valves</h2>
+                    <p style="color: var(--text-secondary); line-height: 1.6;">
+                        When pipe <em>e</em> = (<em>u</em><sub>fault</sub>, <em>v</em><sub>fault</sub>) ruptures, multi-source BFS begins simultaneously from both endpoints:
+                    </p>
+                    <div class="pseudocode-block">
+Algorithm FirstBFS(u_fault, v_fault, G):
+    Input: Fault endpoints u_fault, v_fault, Network Graph G = (V, E)
+    Output: Set of boundary isolation valves B
+
+    Initialize Queue Q ← Empty
+    Initialize Visited Set V_visited ← { u_fault, v_fault }
+    Initialize Boundary Set B ← Empty
+
+    For each endpoint ep in { u_fault, v_fault }:
+        If Node_Type(ep) == 'valve':
+            B.add(ep)
+        Else:
+            Q.enqueue(ep)
+
+    While Q is not empty:
+        curr ← Q.dequeue()
+        For each neighbor nbr in Adjacent_Nodes(curr):
+            If (curr, nbr) == (u_fault, v_fault) or (curr, nbr) == (v_fault, u_fault):
+                Continue   // Skip damaged pipe
+            
+            If nbr not in V_visited:
+                V_visited.add(nbr)
+                If Node_Type(nbr) == 'valve':
+                    B.add(nbr)   // Boundary valve reached!
+                    // STOP branch expansion: Do NOT enqueue nbr
+                Else:
+                    Q.enqueue(nbr)  // Continue level expansion
+
+    Return B
+                    </div>
+                </div>
+
+                <div class="theory-card">
+                    <h2 class="theory-title">4. Step 4 – Second BFS: Check Supply</h2>
+                    <p style="color: var(--text-secondary); line-height: 1.6;">
+                        With the boundary valves <em>B</em> closed (Step 3) and the broken pipe removed, BFS starts at the Water Tower and marks every node it can still reach:
+                    </p>
+                    <div class="pseudocode-block">
+Algorithm SecondBFS(Water_Tower, Closed_Valves, G):
+    Input: Water Tower 'WT', Set of closed valves B, Graph G
+    Output: Reachable_Buildings, Affected_Buildings
+
+    Initialize Queue Q ← Empty
+    Initialize Reachable Set R ← { WT }
+    Q.enqueue(WT)
+
+    While Q is not empty:
+        curr ← Q.dequeue()
+        If curr in Closed_Valves:
+            Continue   // Closed valve blocks downstream flow
+
+        For each neighbor nbr in Adjacent_Nodes(curr):
+            If (curr, nbr) is faulty pipe:
+                Continue
+            If nbr in Closed_Valves:
+                R.add(nbr)  // Flow reaches valve inlet, but stops
+                Continue
+
+            If nbr not in R:
+                R.add(nbr)
+                Q.enqueue(nbr)
+
+    Operational_Buildings ← All buildings in R
+    Affected_Buildings    ← All buildings NOT in R
+
+    Return Operational_Buildings, Affected_Buildings
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             TAB 5: ISOLATION REPORT
+             =================================================================== -->
+        <section id="tab-report" class="tab-pane">
+            <div id="report-view-container">
+                <div class="empty-report-state">
+                    <div class="empty-icon">📋</div>
+                    <h3>No Simulation Report Available Yet</h3>
+                    <p>Execute an interactive simulation to generate an engineering isolation report.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             TAB 6: ABOUT & TEAM
+             =================================================================== -->
+        <section id="tab-about" class="tab-pane">
+            <div class="theory-container">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <span>👥 Project Details & Academic Team</span>
+                    </h1>
+                    <p class="page-subtitle">
+                        College Micro-Project Submission for Fundamentals of Artificial Intelligence.
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h2 class="theory-title">🏛️ Academic Institution</h2>
+                    <div style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">
+                        <p><strong>Institution:</strong> Karunya Institute of Technology and Sciences (Deemed University)</p>
+                        <p><strong>Department:</strong> Department of Artificial Intelligence and Data Science</p>
+                        <p><strong>Course Title:</strong> Fundamentals of Artificial Intelligence</p>
+                        <p><strong>Course Code:</strong> <code>25DC204</code></p>
+                        <p><strong>Academic Year:</strong> 2026–2027</p>
+                    </div>
+                </div>
+
+                <div class="theory-card">
+                    <h2 class="theory-title">👨‍💻 Micro-Project Team Members</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <div style="background: #f8fafc; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="font-size: 1.1rem; font-weight: 800; color: var(--deep-navy);">1. Dabria Susan Sam</div>
+                            <div style="font-size: 0.8rem; color: var(--primary-blue); font-weight: 600; margin-top: 0.2rem;">Algorithm & Graph Modeling</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">Graph abstraction & adjacency representation.</div>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="font-size: 1.1rem; font-weight: 800; color: var(--deep-navy);">2. G Revanth Hari</div>
+                            <div style="font-size: 0.8rem; color: var(--primary-blue); font-weight: 600; margin-top: 0.2rem;">Hydraulic Network Simulation</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">Campus pipe sizing, pressure loops, & flow parameters.</div>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="font-size: 1.1rem; font-weight: 800; color: var(--deep-navy);">3. Sujith S.</div>
+                            <div style="font-size: 0.8rem; color: var(--primary-blue); font-weight: 600; margin-top: 0.2rem;">Full-Stack Development & UI/UX</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">Interactive SVG visualizer, dual-engine BFS, & dashboard.</div>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="font-size: 1.1rem; font-weight: 800; color: var(--deep-navy);">4. Leah Sasha V.L.</div>
+                            <div style="font-size: 0.8rem; color: var(--primary-blue); font-weight: 600; margin-top: 0.2rem;">Testing & Analytical Reporting</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem;">Scenario verification, metrics calculation, & reporting.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="theory-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                    <h2 class="theory-title" style="color: #166534;">🛡️ Simulation Modeling Disclaimer</h2>
+                    <p style="font-size: 0.85rem; color: #15803d; line-height: 1.6;">
+                        This software is an AI algorithmic micro-project developed for academic evaluation purposes.
+                        It models the network only as a graph of connections and uses Breadth-First Search to decide which valves to close and which buildings stay connected.
+                        It does not simulate flow rates or water pressure; pipe sizes, flows and the water-loss estimate in the report are illustrative figures.
+                        No physical sensors or hardware controllers are required.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Application Scripts -->
+    <script src="js/network-data.js"></script>
+    <script src="js/bfs.js"></script>
+    <script src="js/visualizer.js"></script>
+    <script src="js/simulation.js"></script>
+    <script src="js/report.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
+
