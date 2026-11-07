@@ -43,9 +43,12 @@ class CampusWaterBFS {
      * 1. Initialize FIFO queue with both endpoints of the ruptured pipeline.
      * 2. Mark both endpoints as visited.
      * 3. Traverse outwards level-by-level through adjacent pipelines.
-     * 4. Allow traversal through junctions, buildings, and water source.
-     * 5. CRITICAL CONDITION: As soon as an isolation valve is reached, STOP traversal along that branch.
-     * 6. Collect all boundary isolation valves surrounding the damaged section.
+     * 4. Allow traversal through junctions and buildings.
+     * 5. As soon as an isolation valve is reached, STOP traversal along that branch.
+     * 6. If the Water Tower is reached, stop the whole search: no valve stands between the
+     *    tower and the burst, so valves cannot isolate it (closing any would be unnecessary).
+     * 7. Otherwise keep only the valves on the water-tower side ("upstream"): closing those cuts
+     *    the burst off from the supply. Valves on the far side carry no water to the burst.
      */
     runFirstBFS(faultyU, faultyV, faultyPipeId) {
         const startTime = performance.now();
@@ -55,6 +58,7 @@ class CampusWaterBFS {
         const boundaryValves = new Set();
         const traversalOrder = [];
         const executionSteps = [];
+        let reachedSource = false;
 
         // Step 0: Check endpoints
         for (const ep of [faultyU, faultyV]) {
@@ -80,6 +84,7 @@ class CampusWaterBFS {
                 });
             } else {
                 queue.push(ep);
+                if (this.nodes[ep].type === "source") reachedSource = true;
                 executionSteps.push({
                     stepNumber: executionSteps.length + 1,
                     action: "ENQUEUE_ENDPOINT",
@@ -97,8 +102,8 @@ class CampusWaterBFS {
             }
         }
 
-        // BFS loop
-        while (queue.length > 0) {
+        // BFS loop (stops early once the Water Tower is reached)
+        while (queue.length > 0 && !reachedSource) {
             const curr = queue.shift();
             const currNode = this.nodes[curr];
 
@@ -153,8 +158,8 @@ class CampusWaterBFS {
                             message: `BOUNDARY VALVE FOUND: ${neighbor} (${nbrNode.name}) via ${pipe.label}. Halting traversal on this branch.`
                         });
                     } else if (nbrNode.type === "source") {
-                        // Water source reached
-                        queue.push(neighbor);
+                        // Water Tower reached without passing a valve -> no valve can isolate the burst
+                        reachedSource = true;
                         executionSteps.push({
                             stepNumber: executionSteps.length + 1,
                             action: "SOURCE_REACHED",
@@ -167,8 +172,9 @@ class CampusWaterBFS {
                             visitedNodes: Array.from(visited),
                             traversalOrder: [...traversalOrder],
                             boundaryValves: Array.from(boundaryValves),
-                            message: `Reached Water Tower ${neighbor} via ${pipe.label}. Enqueued to explore adjacent trunks.`
+                            message: `Reached the Water Tower (${neighbor}) via ${pipe.label} without passing a valve. Search stops: no valve stands between the tower and the burst.`
                         });
+                        break;
                     } else {
                         // Junction or building
                         queue.push(neighbor);
@@ -191,18 +197,73 @@ class CampusWaterBFS {
             }
         }
 
+        // Decide which of the valves found actually need closing
+        const valvesFound = Array.from(boundaryValves).sort();
+        let valvesToClose = [];
+        let skippedValves = valvesFound;
+        let message;
+        if (reachedSource) {
+            message = "No valve stands between the Water Tower and this pipe, so closing valves cannot stop the leak. " +
+                "Nothing will be closed (closing valves here would only cut off buildings). The leak continues until the pipe is repaired or the tower is shut.";
+        } else {
+            const region = new Set(Array.from(visited).filter(id => this.nodes[id].type !== "valve"));
+            const upstream = this.reachableFromSource(region, faultyU, faultyV);
+            valvesToClose = valvesFound.filter(id => upstream.has(id));
+            skippedValves = valvesFound.filter(id => !upstream.has(id));
+            message = `Valves to close: [${valvesToClose.join(", ")}] (on the water-tower side of the burst).` +
+                (skippedValves.length ? ` Not needed: [${skippedValves.join(", ")}] (no water reaches the burst through them).` : "");
+        }
+        executionSteps.push({
+            stepNumber: executionSteps.length + 1,
+            action: reachedSource ? "NOT_ISOLATABLE" : "VALVES_SELECTED",
+            phase: 1,
+            currentNode: null,
+            neighborNode: null,
+            pipeId: null,
+            highlightEdges: [],
+            queueSnapshot: [],
+            visitedNodes: Array.from(visited),
+            traversalOrder: [...traversalOrder],
+            boundaryValves: valvesToClose,
+            message
+        });
+
         const endTime = performance.now();
         const durationMs = (endTime - startTime).toFixed(2);
 
         return {
             faultyPipeline: { u: faultyU, v: faultyV, pipeId: faultyPipeId },
-            boundaryValves: Array.from(boundaryValves).sort(),
+            boundaryValves: valvesToClose,      // the valves to close
+            valvesFound,                        // every valve the search touched
+            skippedValves,                      // found but not needed
+            reachedSource,
+            isolatable: !reachedSource,
             traversalOrder,
             visitedNodes: Array.from(visited),
             parentMap,
             steps: executionSteps,
             executionTimeMs: durationMs
         };
+    }
+
+    /**
+     * Nodes the Water Tower can reach without entering the burst region or crossing the burst pipe.
+     * A boundary valve in this set is "upstream": water would reach the burst through it.
+     */
+    reachableFromSource(region, faultyU, faultyV) {
+        const sources = Object.keys(this.nodes).filter(id => this.nodes[id].type === "source");
+        const seen = new Set(sources);
+        const queue = [...sources];
+        while (queue.length > 0) {
+            const curr = queue.shift();
+            for (const { neighbor } of this.adj[curr] || []) {
+                if ((curr === faultyU && neighbor === faultyV) || (curr === faultyV && neighbor === faultyU)) continue;
+                if (region.has(neighbor) || seen.has(neighbor)) continue;
+                seen.add(neighbor);
+                queue.push(neighbor);
+            }
+        }
+        return seen;
     }
 
     /**
@@ -322,6 +383,9 @@ class CampusWaterBFS {
             }
         }
 
+        // The leak is stopped if no end of the burst pipe still receives water through an open node
+        const leakIsolated = ![faultyU, faultyV].some(id => reachableNodes.has(id) && !closedValves.has(id));
+
         const allBuildings = Object.keys(this.nodes).filter(id => this.nodes[id].type === "building");
         const operationalBuildings = allBuildings.filter(id => reachableNodes.has(id));
         const affectedBuildings = allBuildings.filter(id => !reachableNodes.has(id));
@@ -342,6 +406,7 @@ class CampusWaterBFS {
             operationalBuildings,
             affectedBuildings,
             totalBuildings: allBuildings.length,
+            leakIsolated,
             traversalOrder,
             parentMap,
             steps: executionSteps,

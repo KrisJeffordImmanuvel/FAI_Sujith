@@ -432,7 +432,7 @@
                     <span id="impact-pipe-tag" class="status-pill status-fault"></span>
                 </div>
                 <div class="impact-grid">
-                    <div class="impact-stat impact-stat-red">
+                    <div class="impact-stat impact-stat-red" id="impact-buildings-stat">
                         <div class="impact-label">Buildings cut off</div>
                         <div class="impact-value" id="impact-buildings-count">0 / 5</div>
                         <div class="impact-sub" id="impact-buildings-list">None</div>
@@ -441,6 +441,11 @@
                         <div class="impact-label">Valves closed</div>
                         <div class="impact-value" id="impact-valves-count">0</div>
                         <div class="impact-sub" id="impact-valves-list">None</div>
+                    </div>
+                    <div class="impact-stat impact-stat-green" id="impact-leak-stat">
+                        <div class="impact-label">Leak stopped?</div>
+                        <div class="impact-value" id="impact-leak-value">Yes</div>
+                        <div class="impact-sub" id="impact-leak-sub"></div>
                     </div>
                     <div class="impact-stat impact-stat-blue">
                         <div class="impact-label">BFS steps taken</div>
@@ -630,14 +635,16 @@
                             <strong>BFS finds the nearest valves that isolate the rupture (fewest hops).</strong>
                             It explores outwards from both ends of the broken pipe one level at a time and stops each branch at the first valve it meets,
                             so a valve further out along the same branch is never closed.
+                            Then it keeps only the valves on the <strong>water-tower side</strong>: no water reaches the burst through the others, so closing them would be unnecessary.
+                            If the search reaches the water tower without passing a valve, no valve can isolate that pipe and none is closed.
                         </p>
                     </div>
                     <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
                         <h4 style="color: #92400e; font-weight: 700; margin-bottom: 0.35rem;">What it does not do:</h4>
                         <ul style="font-size: 0.88rem; color: #92400e; line-height: 1.5; padding-left: 1.25rem;">
                             <li>It does not use pipe length, diameter or flow, so "nearest" means fewest pipes, not shortest distance.</li>
-                            <li>It does not promise the fewest buildings cut off; that depends on where valves are installed.
-                                In this network the loop pipes have no valves, so a rupture on any loop or junction pipe closes all four valves.</li>
+                            <li>It cannot isolate a pipe that has no valve between it and the water tower. In this network the valves sit only on the building branches,
+                                so a burst on the tower pipe, a junction pipe or a loop pipe cannot be stopped with valves: the leak continues until the pipe is repaired (or the tower is shut).</li>
                             <li>It does not simulate flow rates or water pressure. "Supplied" only means a building is still connected to the water tower by open pipes.</li>
                         </ul>
                     </div>
@@ -647,14 +654,14 @@
                 </div>
 
                 <div class="theory-card">
-                    <h2 class="theory-title">3. Step 2 – First BFS: Find Boundary Valves</h2>
+                    <h2 class="theory-title">3. Step 2 – First BFS: Find the Valves to Close</h2>
                     <p style="color: var(--text-secondary); line-height: 1.6;">
                         When pipe <em>e</em> = (<em>u</em><sub>fault</sub>, <em>v</em><sub>fault</sub>) ruptures, multi-source BFS begins simultaneously from both endpoints:
                     </p>
                     <div class="pseudocode-block">
 Algorithm FirstBFS(u_fault, v_fault, G):
     Input: Fault endpoints u_fault, v_fault, Network Graph G = (V, E)
-    Output: Set of boundary isolation valves B
+    Output: Valves to close C (empty if the pipe cannot be isolated)
 
     Initialize Queue Q ← Empty
     Initialize Visited Set V_visited ← { u_fault, v_fault }
@@ -665,6 +672,7 @@ Algorithm FirstBFS(u_fault, v_fault, G):
             B.add(ep)
         Else:
             Q.enqueue(ep)
+            If ep == WT: Return ∅      // burst touches the tower: cannot isolate
 
     While Q is not empty:
         curr ← Q.dequeue()
@@ -677,10 +685,16 @@ Algorithm FirstBFS(u_fault, v_fault, G):
                 If Node_Type(nbr) == 'valve':
                     B.add(nbr)   // Boundary valve reached!
                     // STOP branch expansion: Do NOT enqueue nbr
+                Else If nbr == WT:
+                    Return ∅     // reached the tower without a valve: cannot isolate
                 Else:
                     Q.enqueue(nbr)  // Continue level expansion
 
-    Return B
+    // Keep only valves on the water-tower side (upstream):
+    // a valve is upstream if WT can reach it without entering V_visited
+    Region ← V_visited minus valves
+    C ← { b in B : Reachable(WT, b) avoiding Region and the damaged pipe }
+    Return C
                     </div>
                 </div>
 
@@ -795,7 +809,7 @@ Algorithm SecondBFS(Water_Tower, Closed_Valves, G):
                     <p style="font-size: 0.85rem; color: #15803d; line-height: 1.6;">
                         This software is an AI algorithmic micro-project developed for academic evaluation purposes.
                         It models the network only as a graph of connections and uses Breadth-First Search to decide which valves to close and which buildings stay connected.
-                        It does not simulate flow rates or water pressure; pipe sizes, flows and the water-loss estimate in the report are illustrative figures.
+                        It does not simulate flow rates or water pressure; pipe sizes, flows and the water-saved estimate in the report are illustrative figures.
                         No physical sensors or hardware controllers are required.
                     </p>
                 </div>

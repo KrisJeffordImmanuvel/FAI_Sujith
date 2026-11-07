@@ -204,10 +204,12 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
     Algorithmic Rules:
     1. Initialize BFS queue with both endpoints of the damaged pipeline.
     2. Explore outward level-by-level through connected edges.
-    3. Traversal is allowed through junctions, buildings, and source.
-    4. Traversal STOPS immediately along any path when an isolation valve is reached.
-    5. Discovered valves are added to the boundary valve set.
-    6. Returns complete execution trace, queue snapshots, and boundary valves found.
+    3. Traversal is allowed through junctions and buildings.
+    4. Traversal STOPS along any path when an isolation valve is reached.
+    5. If the Water Tower is reached, the whole search stops: no valve stands between the
+       tower and the burst, so valves cannot isolate it and none are closed.
+    6. Otherwise only the valves on the water-tower side ("upstream") are returned as the
+       valves to close; valves on the far side carry no water to the burst.
     """
     start_time = time.perf_counter()
     adj = build_adjacency(nodes, pipelines)
@@ -218,6 +220,7 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
     boundary_valves = set()
     traversal_order = []
     execution_steps = []
+    reached_source = False
     
     # 1. Initialize queue with faulty endpoints
     for ep in [faulty_u, faulty_v]:
@@ -248,6 +251,8 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
             })
         else:
             queue.append(ep)
+            if nodes[ep]["type"] == "source":
+                reached_source = True
             execution_steps.append({
                 "step": len(execution_steps) + 1,
                 "stepNumber": len(execution_steps) + 1,
@@ -267,8 +272,8 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
                 "message": f"Initialized BFS queue with fault endpoint {ep} ({nodes[ep]['name']})."
             })
             
-    # 2. Process BFS queue
-    while queue:
+    # 2. Process BFS queue (stops early once the Water Tower is reached)
+    while queue and not reached_source:
         curr = queue.popleft()
         curr_info = nodes[curr]
         
@@ -331,7 +336,8 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
                         "message": f"Encountered isolation valve {nbr} ({nbr_info['name']}) via pipe {pipe['id']}. Halting traversal on this branch and adding {nbr} to boundary valves."
                     })
                 elif nbr_info["type"] == "source":
-                    # Main water reservoir reached
+                    # Water Tower reached without passing a valve -> valves cannot isolate the burst
+                    reached_source = True
                     execution_steps.append({
                         "step": len(execution_steps) + 1,
                         "stepNumber": len(execution_steps) + 1,
@@ -351,9 +357,9 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
                         "traversalOrder": list(traversal_order),
                         "discovered_valves": sorted(list(boundary_valves)),
                         "boundaryValves": sorted(list(boundary_valves)),
-                        "message": f"Encountered main water source {nbr}. Exploration continues to adjacent trunk links."
+                        "message": f"Reached the Water Tower ({nbr}) via pipe {pipe['id']} without passing a valve. Search stops: no valve stands between the tower and the burst."
                     })
-                    queue.append(nbr)
+                    break
                 else:
                     # Junction or Building
                     queue.append(nbr)
@@ -379,6 +385,40 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
                         "message": f"Discovered {nbr_info['type']} {nbr} ({nbr_info['name']}) via {pipe['id']}. Enqueued for level-order exploration."
                     })
 
+    # 3. Decide which of the valves found actually need closing
+    valves_found = sorted(boundary_valves)
+    if reached_source:
+        valves_to_close, skipped_valves = [], valves_found
+        message = ("No valve stands between the Water Tower and this pipe, so closing valves cannot stop the leak. "
+                   "Nothing will be closed (closing valves here would only cut off buildings). "
+                   "The leak continues until the pipe is repaired or the tower is shut.")
+    else:
+        region = {n for n in visited if nodes[n]["type"] != "valve"}
+        upstream = reachable_from_source(nodes, adj, region, faulty_u, faulty_v)
+        valves_to_close = [v for v in valves_found if v in upstream]
+        skipped_valves = [v for v in valves_found if v not in upstream]
+        message = f"Valves to close: [{', '.join(valves_to_close)}] (on the water-tower side of the burst)."
+        if skipped_valves:
+            message += f" Not needed: [{', '.join(skipped_valves)}] (no water reaches the burst through them)."
+    execution_steps.append({
+        "step": len(execution_steps) + 1,
+        "stepNumber": len(execution_steps) + 1,
+        "action": "NOT_ISOLATABLE" if reached_source else "VALVES_SELECTED",
+        "phase": 1,
+        "current_node": None,
+        "currentNode": None,
+        "neighbor_node": None,
+        "pipeline_id": None,
+        "queue_snapshot": [],
+        "visited_nodes": sorted(list(visited)),
+        "visitedNodes": sorted(list(visited)),
+        "traversal_order": list(traversal_order),
+        "traversalOrder": list(traversal_order),
+        "discovered_valves": valves_to_close,
+        "boundaryValves": valves_to_close,
+        "message": message
+    })
+
     duration_ms = (time.perf_counter() - start_time) * 1000.0
 
     return {
@@ -387,13 +427,36 @@ def run_first_bfs(nodes, pipelines, faulty_u, faulty_v, faulty_pipe_id=None):
             "v": faulty_v,
             "id": faulty_pipe_id
         },
-        "boundary_valves": sorted(list(boundary_valves)),
+        "boundary_valves": valves_to_close,
+        "valves_found": valves_found,
+        "skipped_valves": skipped_valves,
+        "reached_source": reached_source,
+        "isolatable": not reached_source,
         "traversal_order": traversal_order,
         "visited_nodes": sorted(list(visited)),
         "parent_map": parent_map,
         "steps": execution_steps,
         "execution_time_ms": round(duration_ms, 3)
     }
+
+def reachable_from_source(nodes, adj, region, faulty_u, faulty_v):
+    """
+    Nodes the Water Tower can reach without entering the burst region or crossing the burst pipe.
+    A boundary valve in this set is "upstream": water would reach the burst through it.
+    """
+    sources = [n for n, d in nodes.items() if d["type"] == "source"]
+    seen = set(sources)
+    queue = deque(sources)
+    while queue:
+        curr = queue.popleft()
+        for nbr, _pipe in adj[curr]:
+            if (curr == faulty_u and nbr == faulty_v) or (curr == faulty_v and nbr == faulty_u):
+                continue
+            if nbr in region or nbr in seen:
+                continue
+            seen.add(nbr)
+            queue.append(nbr)
+    return seen
 
 def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
     """
@@ -526,6 +589,9 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
                     "message": f"{nbr_type} {nbr} ({nodes[nbr]['name']}) is reachable via pipe {pipe['id']}. Enqueued."
                 })
 
+    # The leak is stopped if no end of the burst pipe still receives water through an open node
+    leak_isolated = not any(n in reachable_nodes and n not in closed_valves_set for n in (faulty_u, faulty_v))
+
     all_buildings = [nid for nid, d in nodes.items() if d["type"] == "building"]
     operational_buildings = [b for b in all_buildings if b in reachable_nodes]
     affected_buildings = [b for b in all_buildings if b not in reachable_nodes]
@@ -545,6 +611,7 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
         "operational_buildings": operational_buildings,
         "affected_buildings": affected_buildings,
         "total_buildings": len(all_buildings),
+        "leak_isolated": leak_isolated,
         "traversal_order": traversal_order,
         "parent_map": parent_map,
         "steps": execution_steps,

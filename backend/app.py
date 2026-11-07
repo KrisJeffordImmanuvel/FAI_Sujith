@@ -46,7 +46,7 @@ SCENARIOS = [
         "fault_v": "J1",
         "pipe_id": "P1",
         "severity": "Severe (whole campus)",
-        "description": "P1 is the only pipe leaving the water tower. BFS closes V1-V4 and all 5 buildings lose supply."
+        "description": "P1 is the only pipe leaving the water tower and has no valve, so it cannot be isolated by valves. All 5 buildings lose supply."
     },
     {
         "id": "scenario_hostel_line",
@@ -72,8 +72,8 @@ SCENARIOS = [
         "fault_u": "J2",
         "fault_v": "J4",
         "pipe_id": "P16",
-        "severity": "Severe (no loop valves)",
-        "description": "Loop pipes have no valves of their own, so BFS reaches V1-V4 and all 5 buildings lose supply."
+        "severity": "Leak cannot be isolated",
+        "description": "Water reroutes around the loop so no building loses supply, but no valve stands between the tower and P16, so the leak cannot be stopped with valves."
     }
 ]
 

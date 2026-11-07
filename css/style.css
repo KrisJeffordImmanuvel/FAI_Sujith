@@ -693,7 +693,7 @@ body {
 
 .impact-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
 }
 
@@ -707,6 +707,11 @@ body {
 .impact-stat-red { background: #fef2f2; border-color: #fecaca; }
 .impact-stat-amber { background: #fffbeb; border-color: #fde68a; }
 .impact-stat-blue { background: #eff6ff; border-color: #bfdbfe; }
+.impact-stat-green { background: #ecfdf5; border-color: #a7f3d0; }
+.impact-stat-green .impact-value { color: #047857; }
+
+.leak-yes { color: #047857; font-weight: 700; }
+.leak-no { color: #b91c1c; font-weight: 700; }
 
 .impact-label {
     font-size: 0.72rem;

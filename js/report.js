@@ -90,9 +90,9 @@ class ReportManager {
                         <div class="kpi-sub">${fault.u} ↔ ${fault.v} (${fault.label})</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-label">Boundary Valves Isolated</div>
+                        <div class="kpi-label">Valves Closed</div>
                         <div class="kpi-value highlight-orange">${phase1.boundaryValves.length}</div>
-                        <div class="kpi-sub">[${phase1.boundaryValves.join(", ")}]</div>
+                        <div class="kpi-sub">${phase1.boundaryValves.length ? `[${phase1.boundaryValves.join(", ")}]` : "None – cannot be isolated by valves"}</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-label">Protected Campus Facilities</div>
@@ -100,9 +100,9 @@ class ReportManager {
                         <div class="kpi-sub">${protectionPct}% Supply Efficiency</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-label">Rough Water-Loss Estimate</div>
-                        <div class="kpi-value highlight-blue">${waterSavedLiters.toLocaleString()} L</div>
-                        <div class="kpi-sub">Illustrative: design flow × 0.85 × 45 min</div>
+                        <div class="kpi-label">Rough Water Saved</div>
+                        <div class="kpi-value highlight-blue">${phase2.leakIsolated ? `${waterSavedLiters.toLocaleString()} L` : "—"}</div>
+                        <div class="kpi-sub">${phase2.leakIsolated ? "Illustrative: 45 min of leaking avoided (0.85 × design flow)" : "Leak not stopped by valves"}</div>
                     </div>
                 </div>
 
@@ -131,8 +131,10 @@ class ReportManager {
                             <span class="t-val">${fault.flow} Liters / minute</span>
                         </div>
                         <div class="telemetry-item">
-                            <span class="t-label">Incident Severity:</span>
-                            <span class="t-val text-danger font-bold">Critical Rupture — Automatic BFS Isolation Triggered</span>
+                            <span class="t-label">Leak Stopped by Valves:</span>
+                            <span class="t-val ${phase2.leakIsolated ? "" : "text-danger"} font-bold">${phase2.leakIsolated
+                                ? "Yes – the burst pipe is cut off from the water tower"
+                                : "No – no valve stands between the water tower and this pipe; the leak continues until repair or the tower is shut"}</span>
                         </div>
                     </div>
                 </div>
@@ -142,7 +144,10 @@ class ReportManager {
                     <h3 class="section-heading">2. Step 2 – First BFS: Boundary Valves</h3>
                     <p class="section-desc">
                         Multi-source Breadth-First Search was initiated from endpoints <code>${fault.u}</code> and <code>${fault.v}</code>.
-                        The search expanded one level (one pipe) at a time and stopped each branch at the first valve it met, so it found the nearest valves that isolate the rupture (fewest hops).
+                        The search expanded one level (one pipe) at a time and stopped each branch at the first valve it met.
+                        ${phase1.isolatable
+                            ? "Only the valves on the water-tower side were kept: closing them cuts the burst off from the supply with the fewest hops."
+                            : "It reached the Water Tower without passing a valve, so no valve can isolate this pipe and none was closed (closing valves would only cut off buildings)."}
                     </p>
                     <div class="telemetry-grid">
                         <div class="telemetry-item">
@@ -154,8 +159,8 @@ class ReportManager {
                             <span class="t-val">${phase1.visitedCount} nodes</span>
                         </div>
                         <div class="telemetry-item">
-                            <span class="t-label">Boundary Valves Identified:</span>
-                            <span class="t-val text-warning font-bold">${phase1.boundaryValves.map(v => `${v} (CLOSED)`).join(", ")}</span>
+                            <span class="t-label">Valves Closed:</span>
+                            <span class="t-val text-warning font-bold">${phase1.boundaryValves.length ? phase1.boundaryValves.map(v => `${v} (CLOSED)`).join(", ") : "None"}</span>
                         </div>
                         <div class="telemetry-item">
                             <span class="t-label">First BFS Runtime:</span>
@@ -168,7 +173,7 @@ class ReportManager {
                 <div class="report-section">
                     <h3 class="section-heading">3. Step 4 – Second BFS: Building Supply</h3>
                     <p class="section-desc">
-                        Following physical closure of boundary valves, a reachability BFS was executed starting from the primary reservoir (<strong>Water Tower 'WT'</strong>).
+                        With the selected valves closed and the burst pipe removed, a reachability BFS was executed starting from the <strong>Water Tower 'WT'</strong>.
                         Buildings it reached are still connected to the tower through open pipes; buildings it could not reach are cut off. (Connectivity only; flow and pressure are not simulated.)
                     </p>
 

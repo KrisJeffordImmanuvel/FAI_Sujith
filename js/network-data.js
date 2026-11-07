@@ -223,10 +223,11 @@ const CAMPUS_NETWORK_DATA = {
             badge: "Worst Case",
             badgeColor: "red",
             severity: "Severe (whole campus)",
-            expectedBoundaryValves: ["V1", "V2", "V3", "V4"],
+            expectedBoundaryValves: [],
             expectedAffectedBuildings: ["Hostel", "Laboratory", "Canteen", "Academic", "Library"],
             expectedOperationalBuildings: [],
-            description: "P1 is the only pipe leaving the water tower. With it broken, nothing downstream can be fed, and BFS has to close all four valves V1–V4 to isolate the rupture. All 5 buildings lose supply."
+            expectedLeakStopped: false,
+            description: "P1 is the only pipe leaving the water tower, and it has no valve. The search reaches the tower at once, so no valve can isolate the burst and none is closed. All 5 buildings lose supply because their only feed is broken, and the leak continues until the tower is shut or the pipe is repaired."
         },
         {
             id: "scenario_hostel_line",
@@ -240,6 +241,7 @@ const CAMPUS_NETWORK_DATA = {
             expectedBoundaryValves: ["V1"],
             expectedAffectedBuildings: ["Hostel"],
             expectedOperationalBuildings: ["Laboratory", "Canteen", "Academic", "Library"],
+            expectedLeakStopped: true,
             description: "P3 runs from valve V1 to the Hostel. One endpoint is already a valve and the other side is a dead end, so BFS closes only V1. Only the Hostel loses supply; the other 4 buildings stay connected."
         },
         {
@@ -254,6 +256,7 @@ const CAMPUS_NETWORK_DATA = {
             expectedBoundaryValves: ["V4"],
             expectedAffectedBuildings: ["Academic", "Library"],
             expectedOperationalBuildings: ["Hostel", "Laboratory", "Canteen"],
+            expectedLeakStopped: true,
             description: "P14 links valve V4 to the Academic Block. BFS closes only V4, but V4 also feeds the Library, so 2 buildings lose supply even though only one pipe broke."
         },
         {
@@ -264,12 +267,13 @@ const CAMPUS_NETWORK_DATA = {
             pipe_id: "P16",
             badge: "Looped Pipe",
             badgeColor: "purple",
-            severity: "Severe (no loop valves)",
-            expectedBoundaryValves: ["V1", "V2", "V3", "V4"],
-            expectedAffectedBuildings: ["Hostel", "Laboratory", "Canteen", "Academic", "Library"],
-            expectedOperationalBuildings: [],
-            description: "P16 is part of a loop, so water could still reach J4 another way (via J5). But BFS must isolate the rupture itself, and the loop pipes have no valves of their own. From J2 and J4 the search spreads through every junction before meeting a valve, so all four building valves close and all 5 buildings lose supply.",
-            note: "Why no rerouting? Valves exist only on the building branches (V1–V4). Isolating a loop pipe without cutting buildings would need valves on the loop pipes themselves."
+            severity: "Leak cannot be isolated",
+            expectedBoundaryValves: [],
+            expectedAffectedBuildings: [],
+            expectedOperationalBuildings: ["Hostel", "Laboratory", "Canteen", "Academic", "Library"],
+            expectedLeakStopped: false,
+            description: "P16 is part of a loop. With it broken, water reroutes around the loop (via J5), so no building loses supply. From J2 the search reaches the water tower without passing a valve, so no valve can isolate this pipe and none is closed.",
+            note: "Closing valves here would not stop the leak; it would only cut off buildings. The loop pipes have no valves of their own, so the leak continues until the pipe is repaired."
         }
     ]
 };

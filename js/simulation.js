@@ -116,6 +116,10 @@ class SimulationController {
         return {
             faultyPipeline: r.faulty_pipeline,
             boundaryValves: r.boundaryValves || r.boundary_valves || [],
+            valvesFound: r.valvesFound || r.valves_found || [],
+            skippedValves: r.skippedValves || r.skipped_valves || [],
+            reachedSource: r.reachedSource ?? r.reached_source ?? false,
+            isolatable: r.isolatable ?? true,
             traversalOrder: r.traversalOrder || r.traversal_order || [],
             visitedNodes: r.visitedNodes || r.visited_nodes || [],
             parentMap: r.parentMap || r.parent_map || {},
@@ -133,6 +137,7 @@ class SimulationController {
             operationalBuildings: r.operationalBuildings || r.operational_buildings || [],
             affectedBuildings: r.affectedBuildings || r.affected_buildings || [],
             totalBuildings: r.totalBuildings || r.total_buildings,
+            leakIsolated: r.leakIsolated ?? r.leak_isolated ?? true,
             traversalOrder: r.traversalOrder || r.traversal_order || [],
             parentMap: r.parentMap || r.parent_map || {},
             steps: this.normalizeSteps(r.steps),
@@ -346,14 +351,18 @@ class SimulationController {
      * Step 3: Close Boundary Valves
      */
     closeBoundaryValves() {
-        if (!this.state.phase1Result || this.state.boundaryValves.length === 0) {
+        if (!this.state.phase1Result) {
             if (this.ui.onError) this.ui.onError("Run Step 2 (Find Boundary Valves) first.");
             return;
         }
 
         this.pause();
+        // Use Step 2's final answer even if its animation was not played to the end
+        const toClose = this.state.phase1Result.boundaryValves || [];
+        const isolatable = this.state.phase1Result.isolatable !== false;
+        this.state.boundaryValves = [...toClose];
         this.state.phase = "VALVES_CLOSED";
-        this.state.closedValves = [...this.state.boundaryValves];
+        this.state.closedValves = [...toClose];
         this.state.activeNode = null;
         this.state.highlightedEdges = [];
 
@@ -372,12 +381,19 @@ class SimulationController {
                 visitedNodes: this.state.visitedNodesPhase1,
                 traversalOrder: this.state.traversalOrder,
                 boundaryValves: this.state.boundaryValves,
-                message: `Boundary valves [${this.state.closedValves.join(", ")}] have been closed. The broken pipe is cut off from the buildings behind those valves.`,
+                message: isolatable
+                    ? `Valves [${this.state.closedValves.join(", ")}] have been closed. The burst pipe is cut off from the water tower.`
+                    : "No valve can cut this pipe off from the water tower, so nothing was closed. The leak continues until the pipe is repaired or the tower is shut.",
                 isPlaying: false
             });
         }
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`[VALVES CLOSED] Boundary isolation valves [${this.state.closedValves.join(", ")}] closed.`);
+            this.ui.onLogMessage(isolatable
+                ? `[VALVES CLOSED] Valves [${this.state.closedValves.join(", ")}] closed. Leak cut off from the water tower.`
+                : "[NO VALVES CLOSED] No valve stands between the water tower and this pipe; closing valves would not stop the leak.");
+        }
+        if (!isolatable && this.ui.onNotice) {
+            this.ui.onNotice("No valve can isolate this pipe: it connects to the water tower without passing a valve. Nothing was closed.");
         }
     }
 
@@ -385,7 +401,7 @@ class SimulationController {
      * Step 4: Run / Prepare Second BFS (Water Supply Propagation)
      */
     async runSecondBFS(autoPlay = true, onComplete = null) {
-        if (this.state.closedValves.length === 0 && (!this.state.boundaryValves || this.state.boundaryValves.length === 0)) {
+        if (!this.state.phase1Result) {
             if (this.ui.onError) this.ui.onError("Complete Step 2 (Find Boundary Valves) and Step 3 (Close Valves) first.");
             return;
         }
@@ -531,7 +547,7 @@ class SimulationController {
             this.pause();
             if (this.currentPhaseNum === 1) {
                 if (this.ui.onLogMessage) {
-                    this.ui.onLogMessage(`Step 2 complete. Boundary valves found: [${this.state.boundaryValves.join(", ")}]. Click 'Step 3: Close valves' to continue.`);
+                    this.ui.onLogMessage(this.step2Summary() + " Click 'Step 3: Close valves' to continue.");
                 }
             } else if (this.currentPhaseNum === 2) {
                 this.state.phase = "COMPLETE";
@@ -543,6 +559,12 @@ class SimulationController {
                 }
             }
         }
+    }
+
+    step2Summary() {
+        const r = this.state.phase1Result;
+        if (r && r.isolatable === false) return "Step 2 complete. No valve can isolate this pipe (the search reached the water tower).";
+        return `Step 2 complete. Valves to close: [${(r ? r.boundaryValves : this.state.boundaryValves).join(", ")}].`;
     }
 
     /**
@@ -598,7 +620,7 @@ class SimulationController {
                 this.pause();
                 if (this.currentPhaseNum === 1) {
                     if (this.ui.onLogMessage) {
-                        this.ui.onLogMessage(`Step 2 complete. Boundary valves found: [${this.state.boundaryValves.join(", ")}]. Next: Step 3 – Close Valves.`);
+                        this.ui.onLogMessage(this.step2Summary() + " Next: Step 3 – Close Valves.");
                     }
                 } else if (this.currentPhaseNum === 2) {
                     this.state.phase = "COMPLETE";
@@ -690,11 +712,14 @@ class SimulationController {
                     name: this.data.nodes[vid].name,
                     state: "CLOSED"
                 })),
+                isolatable: phase1.isolatable !== false,
+                skippedValves: phase1.skippedValves || [],
                 traversalOrder: phase1.traversalOrder || phase1.traversal_order || [],
                 visitedCount: (phase1.visitedNodes || phase1.visited_nodes || []).length,
                 timeMs: phase1.executionTimeMs || phase1.execution_time_ms || 0.5
             },
             phase2: {
+                leakIsolated: phase2.leakIsolated !== false,
                 operationalBuildings: (phase2.operationalBuildings || phase2.operational_buildings || []).map(bid => ({
                     id: bid,
                     name: this.data.nodes[bid].name,
