@@ -239,6 +239,18 @@ class NetworkVisualizer {
         this.renderNodes();
     }
 
+    /**
+     * "supplied", "cut" or "checking" for a building.
+     * Before Step 4 every building still has water; during Step 4 a building the search
+     * has not reached yet is "checking"; only when Step 4 is complete is it "cut".
+     */
+    buildingStatus(nodeId) {
+        const phase = this.simulationPhase;
+        if (phase === "PHASE2_BFS") return this.reachableNodes.has(nodeId) ? "supplied" : "checking";
+        if (phase === "COMPLETE") return this.reachableNodes.has(nodeId) ? "supplied" : "cut";
+        return "supplied";
+    }
+
     renderPipelines() {
         let pipesHtml = "";
         let flowHtml = "";
@@ -277,7 +289,9 @@ class NetworkVisualizer {
                 strokeColor = "#f59e0b"; // glowing amber
                 strokeWidth += 2;
                 filter = 'filter="url(#glow-valve)"';
-            } else if (this.simulationPhase === "PHASE2_BFS" || this.simulationPhase === "COMPLETE") {
+            } else if (this.simulationPhase === "COMPLETE") {
+                // Pipes are marked dry only after Step 4 has finished; while it runs,
+                // the moving water pulses show how far the search has reached.
                 if (!isWaterFlowing) {
                     pipeClass += " pipeline-dry";
                     strokeColor = "#94a3b8"; // grey dried up
@@ -465,39 +479,47 @@ class NetworkVisualizer {
                 `;
             } else if (node.type === "building") {
                 // Building Node (Hostel, Lab, Canteen, Academic, Library)
-                const isSupplied = (this.simulationPhase === "NORMAL" || this.simulationPhase === "FAULT" || isReachable);
-                const buildingBorder = isSupplied ? "#10b981" : "#ef4444";
-                const badgeColor = isSupplied ? "#10b981" : "#64748b";
-                const statusBadgeText = isSupplied ? "WATER ACTIVE" : "SUPPLY CUT OFF";
+                // While Step 4 is still searching, an unreached building is "checking", not "cut off"
+                const status = this.buildingStatus(nodeId);
+                const isSupplied = status === "supplied";
+                const look = {
+                    supplied: { border: "#10b981", circle: "#dcfce7", pillFill: "#ecfdf5", pillStroke: "#a7f3d0", text: "#047857", label: "WATER ACTIVE", cls: "building-supplied" },
+                    cut: { border: "#ef4444", circle: "#fee2e2", pillFill: "#fef2f2", pillStroke: "#fecaca", text: "#b91c1c", label: "SUPPLY CUT OFF", cls: "building-deprived" },
+                    checking: { border: "#94a3b8", circle: "#f1f5f9", pillFill: "#f8fafc", pillStroke: "#cbd5e1", text: "#475569", label: "CHECKING…", cls: "building-checking" }
+                }[status];
 
                 nodeHtml = `
-                    <g class="node-group node-building ${isSupplied ? 'building-supplied' : 'building-deprived'} ${isActiveNode ? 'node-is-active' : ''}"
+                    <g class="node-group node-building ${look.cls} ${isActiveNode ? 'node-is-active' : ''}"
                        data-id="${nodeId}" transform="translate(${node.x}, ${node.y})">
                         ${activeHaloHtml}
                         <!-- Card Background -->
                         <rect x="-65" y="-30" width="130" height="60" rx="10"
-                              fill="#ffffff" stroke="${buildingBorder}" stroke-width="2.5"
+                              fill="#ffffff" stroke="${look.border}" stroke-width="2.5"
                               filter="drop-shadow(0 4px 6px rgba(0,0,0,0.08))" />
 
                         <!-- Droplet Water Indicator -->
-                        <circle cx="-42" cy="0" r="14" fill="${isSupplied ? '#dcfce7' : '#fee2e2'}" />
+                        <circle cx="-42" cy="0" r="14" fill="${look.circle}" />
                         ${isSupplied ? `
                             <!-- Water Droplet Icon -->
                             <path transform="translate(-48, -6) scale(0.6)" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
                                   fill="#10b981" stroke="#059669" stroke-width="1.5" />
-                        ` : `
+                        ` : status === "cut" ? `
                             <!-- Slashed Droplet Icon -->
                             <path transform="translate(-48, -6) scale(0.6)" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
                                   fill="#ef4444" opacity="0.6" />
                             <line x1="-48" y1="6" x2="-36" y2="-6" stroke="#991b1b" stroke-width="2" />
+                        ` : `
+                            <!-- Grey Droplet Icon (not checked yet) -->
+                            <path transform="translate(-48, -6) scale(0.6)" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
+                                  fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.5" />
                         `}
 
                         <!-- Building Name -->
                         <text x="14" y="-8" text-anchor="middle" font-size="11" font-weight="800" fill="#1e293b">${node.name}</text>
                         
                         <!-- Status Pill -->
-                        <rect x="-24" y="5" width="80" height="16" rx="8" fill="${isSupplied ? '#ecfdf5' : '#fef2f2'}" stroke="${isSupplied ? '#a7f3d0' : '#fecaca'}" stroke-width="1" />
-                        <text x="16" y="16.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="${isSupplied ? '#047857' : '#b91c1c'}">${statusBadgeText}</text>
+                        <rect x="-24" y="5" width="80" height="16" rx="8" fill="${look.pillFill}" stroke="${look.pillStroke}" stroke-width="1" />
+                        <text x="16" y="16.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="${look.text}">${look.label}</text>
                     </g>
                 `;
             }
@@ -526,9 +548,14 @@ class NetworkVisualizer {
             el.addEventListener("mouseenter", (e) => {
                 let statusDetails = "";
                 if (node.type === "building") {
-                    const isSupplied = (this.simulationPhase === "NORMAL" || this.simulationPhase === "FAULT" || this.reachableNodes.has(nodeId));
+                    const status = this.buildingStatus(nodeId);
+                    const tt = {
+                        supplied: ["#10b981", "Supplied (Operational)"],
+                        cut: ["#ef4444", "Cut off (No water)"],
+                        checking: ["#64748b", "Checking… (Step 4 has not reached it yet)"]
+                    }[status];
                     statusDetails = `
-                        <div class="tt-row"><span>Status:</span> <strong style="color: ${isSupplied ? '#10b981' : '#ef4444'}">${isSupplied ? 'Supplied (Operational)' : 'Isolated (Deprived)'}</strong></div>
+                        <div class="tt-row"><span>Status:</span> <strong style="color: ${tt[0]}">${tt[1]}</strong></div>
                         <div class="tt-row"><span>Demand:</span> <strong>${node.demand} m³/day</strong></div>
                         <div class="tt-row"><span>Occupancy:</span> <strong>${node.occupancy} persons</strong></div>
                     `;

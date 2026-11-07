@@ -479,22 +479,28 @@ class SimulationController {
         const traversalOrder = s.traversalOrder || s.traversal_order || [];
         const boundaryValves = s.boundaryValves || s.discovered_valves || this.state.boundaryValves || [];
 
-        this.state.activeNode = currentNode;
-        this.state.highlightedEdges = s.highlightEdges || (s.pipeId ? [s.pipeId] : []);
+        const isLastPhase2Step = !isPhase1 && index === this.currentSteps.length - 1;
+        this.state.activeNode = isLastPhase2Step ? null : currentNode;
+        this.state.highlightedEdges = isLastPhase2Step ? [] : (s.highlightEdges || (s.pipeId ? [s.pipeId] : []));
         this.state.traversalOrder = traversalOrder;
 
+        // Step 4 is finished once its last step is shown (also when stepping by hand)
+        const phase2Done = !isPhase1 && index === this.currentSteps.length - 1;
         if (isPhase1) {
             this.state.visitedNodesPhase1 = visitedNodes;
             this.state.boundaryValves = boundaryValves;
         } else {
             this.state.reachableNodes = visitedNodes;
+            const wasComplete = this.state.phase === "COMPLETE";
+            this.state.phase = phase2Done ? "COMPLETE" : "PHASE2_BFS";
+            if (phase2Done !== wasComplete && this.ui.onStateChange) this.ui.onStateChange(this.state);
         }
 
         // Update Visualizer
         this.visualizer.setSimulationState({
-            phase: isPhase1 ? "PHASE1_BFS" : "PHASE2_BFS",
+            phase: isPhase1 ? "PHASE1_BFS" : (phase2Done ? "COMPLETE" : "PHASE2_BFS"),
             fault: this.state.selectedFault,
-            activeNode: currentNode,
+            activeNode: this.state.activeNode,
             boundaryValves: this.state.boundaryValves,
             closedValves: this.state.closedValves,
             reachableNodes: this.state.reachableNodes,
