@@ -676,6 +676,11 @@ body {
     border-color: #ef4444;
 }
 
+.lg-building-checking {
+    background: #f8fafc;
+    border: 2px dashed #94a3b8;
+}
+
 .toolbar-hint {
     font-size: 0.8rem;
     color: var(--text-secondary);

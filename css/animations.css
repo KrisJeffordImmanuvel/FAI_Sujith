@@ -147,6 +147,15 @@
     stroke-dasharray: 4, 4;
 }
 
+.building-checking {
+    transition: all 0.3s ease;
+    opacity: 0.85;
+}
+
+.building-checking > rect {
+    stroke-dasharray: 2, 3;
+}
+
 /* 6. General UI Transitions */
 @keyframes fadeIn {
     from {
