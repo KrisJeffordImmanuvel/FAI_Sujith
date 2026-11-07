@@ -813,10 +813,31 @@ body {
     flex: 1;
 }
 
+.sc-note {
+    font-size: 0.76rem;
+    color: #6b21a8;
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.45;
+}
+
+.sc-expected {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.6rem;
+}
+
 .sc-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
     padding-top: 0.6rem;
     border-top: 1px solid var(--border-color);
     font-size: 0.75rem;

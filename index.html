@@ -2,9 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-<!-- This site is hosted on Netlify. Anyone can build and deploy a site
-     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=58f9a36e-ed22-4ee8-8f5d-609f7bfcdeda
-     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Campus Water-Pipeline Fault Isolation Tool (BFS) | Karunya AI</title>
     <!-- Google Fonts -->
@@ -59,7 +56,7 @@
             <!-- Backend Status & Engine Selector -->
             <div class="nav-right-controls">
                 <div id="backend-health-pill" class="engine-health-badge badge-client">
-                    <span class="dot-offline"></span> Client JS Engine Active
+                    <span class="dot-offline"></span> Browser JS Engine Active
                 </div>
             </div>
         </div>
@@ -127,7 +124,7 @@
                     <div class="kpi-stat-val" id="metric-network-status">
                         <span class="status-pill status-normal">● NORMAL</span>
                     </div>
-                    <div class="kpi-stat-sub">Pressurized Flow Active</div>
+                    <div class="kpi-stat-sub">All buildings connected</div>
                 </div>
 
                 <div class="kpi-stat-card">
@@ -169,8 +166,8 @@
                         <h4 style="color: #166534; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem;">Key Engineering Objectives:</h4>
                         <ul style="padding-left: 1.25rem; font-size: 0.88rem; color: #15803d; line-height: 1.5;">
                             <li><strong>Rapid Water Loss Mitigation:</strong> Pinpoint damaged pipelines and close boundary valves automatically.</li>
-                            <li><strong>Localized Interruption:</strong> Use BFS level-order properties to close <em>only</em> the minimal boundary valves necessary.</li>
-                            <li><strong>Supply Continuity:</strong> Run source reachability BFS to assess which buildings remain supplied via alternate circulation loops.</li>
+                            <li><strong>Localized Interruption:</strong> BFS finds the nearest valves that isolate the rupture (fewest hops), so valves further away stay open.</li>
+                            <li><strong>Supply Check:</strong> A second BFS from the water tower shows which buildings are still connected through open pipes.</li>
                         </ul>
                     </div>
 
@@ -231,7 +228,7 @@
                     <span>🕹️ Interactive Campus Water Network Simulation</span>
                 </h1>
                 <p class="page-subtitle">
-                    Interact with the hydraulic topology, simulate pipeline fractures, and execute the two-phase BFS algorithm step-by-step.
+                    Pick a pipe to break, then follow the 5 steps below to run the two-phase BFS step-by-step.
                 </p>
             </div>
 
@@ -241,10 +238,10 @@
                     <!-- Fault Selection Card -->
                     <div class="card">
                         <h3 class="card-title" style="font-size: 1rem;">
-                            <span>⚠️ Detect Pipeline Fault</span>
+                            <span>⚠️ Step 1: Select Pipe</span>
                         </h3>
                         <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                            Choose two adjacent pipeline endpoints or click directly on any pipeline in the graph.
+                            Pick the broken pipe by ID, by its two endpoints, or by clicking it in the graph.
                         </p>
 
                         <div class="form-group">
@@ -264,7 +261,7 @@
 
                         <button id="btn-detect-fault" class="btn btn-danger btn-block">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                            Simulate Pipeline Rupture
+                            <span><strong>Step 1:</strong> Select Pipe (Mark Rupture)</span>
                         </button>
                     </div>
 
@@ -277,34 +274,38 @@
                         <div class="step-wizard">
                             <div class="step-indicator-item" id="step-wiz-1">
                                 <span class="step-num-badge">1</span>
-                                <span class="step-text">Fault Marked</span>
+                                <span class="step-text">Select pipe</span>
                             </div>
                             <div class="step-indicator-item" id="step-wiz-2">
                                 <span class="step-num-badge">2</span>
-                                <span class="step-text">1st BFS: Find Boundary Valves</span>
+                                <span class="step-text">Find boundary valves <small>(1st BFS)</small></span>
                             </div>
                             <div class="step-indicator-item" id="step-wiz-3">
                                 <span class="step-num-badge">3</span>
-                                <span class="step-text">Close Boundary Valves</span>
+                                <span class="step-text">Close valves</span>
                             </div>
                             <div class="step-indicator-item" id="step-wiz-4">
                                 <span class="step-num-badge">4</span>
-                                <span class="step-text">2nd BFS: Water Reachability</span>
+                                <span class="step-text">Check supply <small>(2nd BFS)</small></span>
+                            </div>
+                            <div class="step-indicator-item" id="step-wiz-5">
+                                <span class="step-num-badge">5</span>
+                                <span class="step-text">Report</span>
                             </div>
                         </div>
 
                         <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
                             <button id="btn-run-first-bfs" class="btn btn-warning btn-block">
-                                <strong>Step 2:</strong> Run 1st BFS (Find Valves)
+                                <strong>Step 2:</strong> Find Boundary Valves
                             </button>
                             <button id="btn-close-valves" class="btn btn-secondary btn-block">
-                                <strong>Step 3:</strong> Close Boundary Valves
+                                <strong>Step 3:</strong> Close Valves
                             </button>
                             <button id="btn-run-second-bfs" class="btn btn-primary btn-block">
-                                <strong>Step 4:</strong> Run 2nd BFS (Water Supply)
+                                <strong>Step 4:</strong> Check Supply
                             </button>
                             <button id="btn-gen-report" class="btn btn-success btn-block">
-                                <strong>Step 5:</strong> Generate Isolation Report
+                                <strong>Step 5:</strong> Report
                             </button>
                         </div>
 
@@ -337,8 +338,8 @@
                         <div class="form-group">
                             <label class="form-label">Algorithm Engine</label>
                             <select id="engine-mode-select" class="form-select">
-                                <option value="js" selected>Client-Side JS Engine</option>
-                                <option value="python">Python REST API (Localhost:5000)</option>
+                                <option value="js" selected>Browser JS Engine (default)</option>
+                                <option value="python">Python REST API (localhost:5000)</option>
                             </select>
                         </div>
                     </div>
@@ -348,7 +349,7 @@
                 <div class="visualizer-card">
                     <div class="visualizer-toolbar">
                         <div style="display: flex; align-items: center; gap: 0.6rem;">
-                            <span style="font-size: 0.9rem; font-weight: 700; color: var(--deep-navy);">Interactive Campus Hydraulic Graph</span>
+                            <span style="font-size: 0.9rem; font-weight: 700; color: var(--deep-navy);">Interactive Campus Water Network Graph</span>
                             <span class="status-pill status-processing" style="font-size: 0.7rem;">Click pipes to break &bull; Drag nodes</span>
                         </div>
                         <div style="font-size: 0.8rem; color: var(--text-secondary);">
@@ -409,7 +410,7 @@
                     <div class="action-pulse-dot"></div>
                     <div class="action-text-wrapper">
                         <strong id="sim-live-action-title">System Status:</strong>
-                        <span id="sim-live-action-text">Select a pipeline above or click on any pipe in the diagram to simulate a fault and initiate BFS traversal.</span>
+                        <span id="sim-live-action-text">Step 1: select a pipe (or click one in the graph), then work through Steps 2–5.</span>
                     </div>
                 </div>
 
@@ -524,7 +525,7 @@
                 <div id="algorithm-log-list" class="log-box">
                     <div class="log-entry">
                         <span class="log-time">[System]</span>
-                        <span class="log-msg">BFS Algorithmic Engine initialized. Select a faulty pipeline and run Phase 1.</span>
+                        <span class="log-msg">BFS engine ready. Step 1: select a pipe, then Step 2: Find Boundary Valves.</span>
                     </div>
                 </div>
             </div>
@@ -540,52 +541,61 @@
                         <span>📚 BFS Algorithmic Foundations & Mathematical Formulation</span>
                     </h1>
                     <p class="page-subtitle">
-                        Theoretical breakdown of Graph Modeling, Breadth-First Search, and Hydraulic Boundary Isolation.
+                        How the campus network is modelled as a graph, and what the two BFS passes do (and do not) compute.
                     </p>
                 </div>
 
                 <div class="theory-card">
                     <h2 class="theory-title">1. Graph Representation of Campus Water Distribution Network</h2>
                     <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
-                        A municipal water distribution system is mathematically formalized as an undirected weighted graph:
+                        The campus water network is modelled as an <strong>undirected, unweighted graph</strong>:
                         <br>
-                        <strong>\( G = (V, E) \)</strong>, where:
+                        <strong><em>G</em> = (<em>V</em>, <em>E</em>)</strong>, where:
                     </p>
                     <ul style="padding-left: 1.5rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
-                        <li><strong>Vertices (\( V \)):</strong> Represent physical hydraulic components categorized into 4 distinct sets:
+                        <li><strong>Vertices (<em>V</em>):</strong> The network components, in 4 groups:
                             <ul>
-                                <li>\( V_{\text{source}} = \{ \text{WT} \} \) — Primary elevated water tower.</li>
-                                <li>\( V_{\text{junction}} = \{ \text{J1}, \text{J2}, \text{J3}, \text{J4}, \text{J5} \} \) — Distribution manifolds.</li>
-                                <li>\( V_{\text{valve}} = \{ \text{V1}, \text{V2}, \text{V3}, \text{V4} \} \) — Boundary gate & butterfly isolation valves.</li>
-                                <li>\( V_{\text{building}} = \{ \text{Hostel}, \text{Laboratory}, \text{Canteen}, \text{Academic}, \text{Library} \} \) — Consumer sinks.</li>
+                                <li><em>V</em><sub>source</sub> = { WT } — Primary elevated water tower.</li>
+                                <li><em>V</em><sub>junction</sub> = { J1, J2, J3, J4, J5 } — Distribution manifolds.</li>
+                                <li><em>V</em><sub>valve</sub> = { V1, V2, V3, V4 } — Isolation valves (one on each building branch).</li>
+                                <li><em>V</em><sub>building</sub> = { Hostel, Laboratory, Canteen, Academic, Library } — Consumer buildings.</li>
                             </ul>
                         </li>
-                        <li><strong>Edges (\( E \)):</strong> Represent underground pipelines connecting node pairs \( (u, v) \), characterized by length \( L \) (meters), internal diameter \( D \) (mm), and maximum design flow \( Q \) (L/min).</li>
+                        <li><strong>Edges (<em>E</em>):</strong> The 17 pipes, each connecting a pair of nodes (<em>u</em>, <em>v</em>). Each pipe also stores a length (m), diameter (mm) and design flow (L/min) for display and the report, but <strong>BFS ignores these values</strong>: every pipe counts as exactly one hop.</li>
                     </ul>
                 </div>
 
                 <div class="theory-card">
-                    <h2 class="theory-title">2. Why Breadth-First Search (BFS) is Optimal for Isolation</h2>
+                    <h2 class="theory-title">2. What BFS Finds Here (and What It Does Not)</h2>
                     <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
-                        In unweighted graph topologies where each pipeline segment constitutes a uniform search hop:
+                        BFS is unweighted: it counts <strong>hops</strong> (pipes crossed), not metres, litres or bar.
                     </p>
                     <div style="background: #eff6ff; border-left: 4px solid var(--primary-blue); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
-                        <h4 style="color: var(--primary-dark); font-weight: 700; margin-bottom: 0.35rem;">Minimal Isolation Perimeter Property:</h4>
+                        <h4 style="color: var(--primary-dark); font-weight: 700; margin-bottom: 0.35rem;">What it finds:</h4>
                         <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.5;">
-                            Because BFS visits nodes in strictly non-decreasing order of distance from the source endpoints, it guarantees encountering the 
-                            <strong>geometrically and topologically closest isolation valves</strong> surrounding a pipeline rupture.
-                            This guarantees that the absolute minimum number of unaffected campus buildings are cut off from water supply.
+                            <strong>BFS finds the nearest valves that isolate the rupture (fewest hops).</strong>
+                            It explores outwards from both ends of the broken pipe one level at a time and stops each branch at the first valve it meets,
+                            so a valve further out along the same branch is never closed.
                         </p>
                     </div>
+                    <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                        <h4 style="color: #92400e; font-weight: 700; margin-bottom: 0.35rem;">What it does not do:</h4>
+                        <ul style="font-size: 0.88rem; color: #92400e; line-height: 1.5; padding-left: 1.25rem;">
+                            <li>It does not use pipe length, diameter or flow, so "nearest" means fewest pipes, not shortest distance.</li>
+                            <li>It does not promise the fewest buildings cut off; that depends on where valves are installed.
+                                In this network the loop pipes have no valves, so a rupture on any loop or junction pipe closes all four valves.</li>
+                            <li>It does not simulate flow rates or water pressure. "Supplied" only means a building is still connected to the water tower by open pipes.</li>
+                        </ul>
+                    </div>
                     <p style="font-size: 0.85rem; color: var(--text-muted);">
-                        Time Complexity: <strong>\( O(V + E) \)</strong> | Space Complexity: <strong>\( O(V) \)</strong>
+                        Time Complexity: <strong><em>O</em>(<em>V</em> + <em>E</em>)</strong> | Space Complexity: <strong><em>O</em>(<em>V</em>)</strong>
                     </p>
                 </div>
 
                 <div class="theory-card">
-                    <h2 class="theory-title">3. Phase 1 Algorithm: Boundary Isolation Valve Identification</h2>
+                    <h2 class="theory-title">3. Step 2 – First BFS: Find Boundary Valves</h2>
                     <p style="color: var(--text-secondary); line-height: 1.6;">
-                        When pipeline \( e = (u_{\text{fault}}, v_{\text{fault}}) \) ruptures, multi-source BFS begins simultaneously from both endpoints:
+                        When pipe <em>e</em> = (<em>u</em><sub>fault</sub>, <em>v</em><sub>fault</sub>) ruptures, multi-source BFS begins simultaneously from both endpoints:
                     </p>
                     <div class="pseudocode-block">
 Algorithm FirstBFS(u_fault, v_fault, G):
@@ -621,9 +631,9 @@ Algorithm FirstBFS(u_fault, v_fault, G):
                 </div>
 
                 <div class="theory-card">
-                    <h2 class="theory-title">4. Phase 2 Algorithm: Campus Reachability & Building Impact</h2>
+                    <h2 class="theory-title">4. Step 4 – Second BFS: Check Supply</h2>
                     <p style="color: var(--text-secondary); line-height: 1.6;">
-                        Simulates closing boundary valves \( B \), eliminating the fault, and tracing water propagation from the Water Tower:
+                        With the boundary valves <em>B</em> closed (Step 3) and the broken pipe removed, BFS starts at the Water Tower and marks every node it can still reach:
                     </p>
                     <div class="pseudocode-block">
 Algorithm SecondBFS(Water_Tower, Closed_Valves, G):
@@ -729,8 +739,9 @@ Algorithm SecondBFS(Water_Tower, Closed_Valves, G):
                 <div class="theory-card" style="background: #f0fdf4; border-color: #bbf7d0;">
                     <h2 class="theory-title" style="color: #166534;">🛡️ Simulation Modeling Disclaimer</h2>
                     <p style="font-size: 0.85rem; color: #15803d; line-height: 1.6;">
-                        This software is an AI algorithmic micro-project developed for academic simulation and evaluation purposes.
-                        All flow rates, hydraulic heads, and pipeline rupture events are simulated numerically using graph-theoretical Breadth-First Search.
+                        This software is an AI algorithmic micro-project developed for academic evaluation purposes.
+                        It models the network only as a graph of connections and uses Breadth-First Search to decide which valves to close and which buildings stay connected.
+                        It does not simulate flow rates or water pressure; pipe sizes, flows and the water-loss estimate in the report are illustrative figures.
                         No physical sensors or hardware controllers are required.
                     </p>
                 </div>

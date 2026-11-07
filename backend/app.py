@@ -36,52 +36,43 @@ def get_local_ip():
     except Exception:
         return "127.0.0.1"
 
-# Preset demonstration scenarios
+# Preset demonstration scenarios (kept in sync with js/network-data.js)
 SCENARIOS = [
     {
+        "id": "scenario_tower_trunk",
+        "title": "Water Tower Trunk Rupture (Worst Case)",
+        "fault_u": "WT",
+        "fault_v": "J1",
+        "pipe_id": "P1",
+        "severity": "Severe (whole campus)",
+        "description": "P1 is the only pipe leaving the water tower. BFS closes V1-V4 and all 5 buildings lose supply."
+    },
+    {
         "id": "scenario_hostel_line",
-        "title": "Scenario 1: Hostel Residential Feed Rupture",
+        "title": "Hostel Service Line Rupture (Single Building)",
         "fault_u": "V1",
         "fault_v": "Hostel",
         "pipe_id": "P3",
-        "severity": "High (Residential impact)",
-        "description": "A high-pressure lateral fracture occurs between Valve 1 and the Hostel Residence Complex. Evaluates single-valve isolation preserving all academic faculties."
+        "severity": "Low (one building)",
+        "description": "BFS closes only V1. Only the Hostel loses supply."
     },
     {
-        "id": "scenario_lab_lateral",
-        "title": "Scenario 2: Research Laboratory Service Fracture",
-        "fault_u": "V2",
-        "fault_v": "Laboratory",
-        "pipe_id": "P7",
-        "severity": "Medium (Hazardous chemistry labs)",
-        "description": "Lateral shear at the Laboratory isolation interface. BFS isolates Valve 2, maintaining supply across the rest of the campus."
-    },
-    {
-        "id": "scenario_canteen_branch",
-        "title": "Scenario 3: Food Court Supply Conduit Burst",
-        "fault_u": "V3",
-        "fault_v": "Canteen",
-        "pipe_id": "P9",
-        "severity": "Medium (Student dining disruption)",
-        "description": "Underground pipe fracture feeding the central dining hall. Demonstrates localized southern isolation via Valve 3."
-    },
-    {
-        "id": "scenario_academic_rupture",
-        "title": "Scenario 4: East Academic Quadrant Pipe Rupture",
+        "id": "scenario_academic_lateral",
+        "title": "Academic Block Lateral Rupture (Shared Valve)",
         "fault_u": "V4",
         "fault_v": "Academic",
         "pipe_id": "P14",
-        "severity": "Critical (Instructional block affected)",
-        "description": "Pipe rupture adjacent to Academic Block. Valve 4 acts as boundary valve; tests impact on both Academic and adjacent Library."
+        "severity": "Medium (two buildings)",
+        "description": "BFS closes only V4, which also feeds the Library, so Academic and Library lose supply."
     },
     {
-        "id": "scenario_central_header",
-        "title": "Scenario 5: North Ring Main Transmission Rupture",
-        "fault_u": "J1",
-        "fault_v": "J2",
-        "pipe_id": "P4",
-        "severity": "Severe (Inter-junction loop failure)",
-        "description": "Major rupture on the northern transmission trunk between Junction 1 and Junction 2. Multi-source BFS discovers boundary valves across multiple loops."
+        "id": "scenario_bypass_loop",
+        "title": "North-East Bypass Loop Rupture (Looped Pipe)",
+        "fault_u": "J2",
+        "fault_v": "J4",
+        "pipe_id": "P16",
+        "severity": "Severe (no loop valves)",
+        "description": "Loop pipes have no valves of their own, so BFS reaches V1-V4 and all 5 buildings lose supply."
     }
 ]
 

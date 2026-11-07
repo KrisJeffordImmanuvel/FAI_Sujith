@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let visualizer = null;
     let reportManager = null;
     let simController = null;
+    let reportShown = false; // true once Step 5 (Report) has been shown for the current fault
 
     // Toast notification helper
     function showToast(message, type = "info") {
@@ -55,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         onStepUpdate: (stepInfo) => {
             updateLiveStepDisplay(stepInfo);
+            if (simController) updateControlButtons(simController.state);
         },
         onLogMessage: (msg) => {
             addLogMessage(msg);
@@ -62,8 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
         onError: (err) => {
             showToast(err, "error");
         },
+        onEngineStatus: (status) => {
+            setEngineBadge(status);
+        },
         onReportReady: (reportData) => {
             if (reportManager) reportManager.renderReport(reportData);
+            markReportShown();
             showToast("Isolation report generated successfully! View under 'Isolation Report' tab.", "success");
         }
     };
@@ -85,7 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setupNavigation();
     setupSimulationButtons();
     setupKeyboardShortcuts();
-    checkBackendHealth();
+    setEngineBadge("js");
+    updateControlButtons(simController.state);
 
     // 5. Pipe & Node Click Handlers
     function onPipelineClicked(pipeId, u, v) {
@@ -93,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("endpoint-u-select").value = u;
         document.getElementById("endpoint-v-select").value = v;
         simController.detectFault(u, v, pipeId);
-        showToast(`Selected pipeline ${pipeId} (${u} ↔ ${v}) as faulty. Use Play (▶) or Next Step (⏭) to begin isolation.`, "info");
+        showToast(`Selected pipeline ${pipeId} (${u} ↔ ${v}) as faulty. Next: Step 2 (Find Boundary Valves), or press Play (▶).`, "info");
     }
 
     function onNodeClicked(nodeId) {
@@ -182,6 +189,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <strong class="sc-title">${sc.title}</strong>
                 </div>
                 <p class="sc-desc">${sc.description}</p>
+                ${sc.note ? `<p class="sc-note">${sc.note}</p>` : ""}
+                <div class="sc-expected">
+                    <span>Valves closed: <strong>${sc.expectedBoundaryValves.join(", ")}</strong></span>
+                    <span>Buildings cut off: <strong>${sc.expectedAffectedBuildings.length} of 5</strong></span>
+                </div>
                 <div class="sc-meta">
                     <span>Target: <strong>${sc.pipe_id} (${sc.fault_u} ↔ ${sc.fault_v})</strong></span>
                     <button class="btn btn-sm btn-outline load-sc-btn" data-id="${sc.id}">Load & Simulate</button>
@@ -248,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const v = document.getElementById("endpoint-v-select").value;
             const pipeId = document.getElementById("fault-pipe-select").value;
             if (!u || !v) {
-                showToast("Please choose faulty pipeline endpoints first.", "error");
+                showToast("Step 1: choose a pipe first.", "error");
                 return;
             }
             simController.detectFault(u, v, pipeId);
@@ -269,11 +281,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("btn-gen-report").addEventListener("click", () => {
             const reportData = simController.getReportData();
             if (!reportData) {
-                showToast("Please complete both BFS phases before generating report.", "error");
+                showToast("Complete Steps 2–4 before Step 5: Report.", "error");
                 return;
             }
             reportManager.renderReport(reportData);
             switchTab("tab-report");
+            markReportShown();
         });
 
         document.getElementById("btn-start-full-sim").addEventListener("click", () => {
@@ -281,7 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const v = document.getElementById("endpoint-v-select").value;
             const pipeId = document.getElementById("fault-pipe-select").value;
             if (!u || !v) {
-                const sc = data.scenarios[0];
+                const sc = data.scenarios.find(s => s.id === "scenario_hostel_line") || data.scenarios[0];
                 document.getElementById("fault-pipe-select").value = sc.pipe_id;
                 document.getElementById("endpoint-u-select").value = sc.fault_u;
                 document.getElementById("endpoint-v-select").value = sc.fault_v;
@@ -299,12 +312,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Sample network button
         document.getElementById("btn-sample-network").addEventListener("click", () => {
-            const sc = data.scenarios[0];
+            const sc = data.scenarios.find(s => s.id === "scenario_hostel_line") || data.scenarios[0];
             document.getElementById("fault-pipe-select").value = sc.pipe_id;
             document.getElementById("endpoint-u-select").value = sc.fault_u;
             document.getElementById("endpoint-v-select").value = sc.fault_v;
+            switchTab("tab-simulation");
             simController.detectFault(sc.fault_u, sc.fault_v, sc.pipe_id);
-            showToast("Sample Network Fault loaded: Hostel line burst (P3).", "info");
+            showToast(`Sample fault loaded: ${sc.title} (${sc.pipe_id}). Continue with Step 2.`, "info");
         });
 
         // Speed slider
@@ -440,28 +454,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Workflow steps: 1 Select pipe → 2 Find boundary valves → 3 Close valves → 4 Check supply → 5 Report
+
     function updateControlButtons(state) {
         const stepItems = document.querySelectorAll(".step-indicator-item");
         stepItems.forEach(item => item.classList.remove("active", "completed"));
 
-        const phase = state.phase;
-        if (phase === "FAULT") {
-            if (stepItems[0]) stepItems[0].classList.add("active");
-        } else if (phase === "PHASE1_BFS") {
-            if (stepItems[0]) stepItems[0].classList.add("completed");
-            if (stepItems[1]) stepItems[1].classList.add("active");
-        } else if (phase === "VALVES_CLOSED") {
-            if (stepItems[0]) stepItems[0].classList.add("completed");
-            if (stepItems[1]) stepItems[1].classList.add("completed");
-            if (stepItems[2]) stepItems[2].classList.add("active");
-        } else if (phase === "PHASE2_BFS") {
-            if (stepItems[0]) stepItems[0].classList.add("completed");
-            if (stepItems[1]) stepItems[1].classList.add("completed");
-            if (stepItems[2]) stepItems[2].classList.add("completed");
-            if (stepItems[3]) stepItems[3].classList.add("active");
-        } else if (phase === "COMPLETE") {
-            stepItems.forEach(item => item.classList.add("completed"));
+        if (state.phase === "NORMAL" || state.phase === "FAULT") reportShown = false;
+
+        // Number of finished steps and the step currently in progress for each phase
+        const progress = {
+            NORMAL: { done: 0, active: 1 },
+            FAULT: { done: 1, active: 2 },
+            PHASE1_BFS: { done: 1, active: 2 },
+            VALVES_CLOSED: { done: 3, active: 4 },
+            PHASE2_BFS: { done: 3, active: 4 },
+            COMPLETE: { done: 4, active: 5 }
+        }[state.phase] || { done: 0, active: 1 };
+
+        // Step 2 counts as done once the first BFS has finished playing
+        if (state.phase === "PHASE1_BFS" && state.totalSteps > 0 && state.currentStepIndex >= state.totalSteps - 1) {
+            progress.done = 2; progress.active = 3;
         }
+        if (state.phase === "COMPLETE" && reportShown) {
+            progress.done = 5; progress.active = 0;
+        }
+
+        stepItems.forEach((item, i) => {
+            const stepNum = i + 1;
+            if (stepNum <= progress.done) item.classList.add("completed");
+            else if (stepNum === progress.active) item.classList.add("active");
+        });
+    }
+
+    function markReportShown() {
+        reportShown = true;
+        updateControlButtons(simController.state);
     }
 
     function updateStaticInspectorWidgets(state) {
@@ -495,8 +523,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (progressFill) progressFill.style.width = `${pct}%`;
         if (stepCounter) stepCounter.textContent = `Step ${stepNumber} / ${totalSteps} (${pct}%)`;
 
-        let phaseName = "Phase 1: Boundary Valve Search";
-        if (phase === 2) phaseName = "Phase 2: Supply Reachability";
+        let phaseName = "Step 2: Find Boundary Valves (1st BFS)";
+        if (phase === 2) phaseName = "Step 4: Check Supply (2nd BFS)";
         else if (phase === 0) phaseName = "Baseline Ready";
 
         if (phaseBadge) phaseBadge.textContent = phaseName;
@@ -594,21 +622,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (countBadge) countBadge.textContent = `${list.length} nodes`;
     }
 
-    async function checkBackendHealth() {
-        const statusBadge = document.getElementById("backend-health-pill");
-        if (!statusBadge) return;
-        const apiBase = (typeof window !== "undefined" && window.location && window.location.origin && window.location.origin.startsWith("http"))
-            ? window.location.origin
-            : "http://localhost:5000";
-        try {
-            const resp = await fetch(`${apiBase}/api/status`, { cache: "no-store" });
-            if (resp.ok) {
-                statusBadge.innerHTML = `<span class="dot-online"></span> Python REST API Online (Port 5000)`;
-                statusBadge.className = "engine-health-badge badge-online";
-            }
-        } catch (e) {
-            statusBadge.innerHTML = `<span class="dot-offline"></span> Standalone Client Mode (Python offline)`;
-            statusBadge.className = "engine-health-badge badge-client";
+    // Header badge showing which BFS engine is actually being used
+    function setEngineBadge(status) {
+        const badge = document.getElementById("backend-health-pill");
+        if (!badge) return;
+        if (status === "python") {
+            badge.innerHTML = `<span class="dot-online"></span> Python API Engine (Port 5000)`;
+            badge.className = "engine-health-badge badge-online";
+        } else if (status === "fallback") {
+            badge.innerHTML = `<span class="dot-offline"></span> Server not reachable – using browser engine`;
+            badge.className = "engine-health-badge badge-client";
+        } else {
+            badge.innerHTML = `<span class="dot-offline"></span> Browser JS Engine Active`;
+            badge.className = "engine-health-badge badge-client";
         }
     }
 });

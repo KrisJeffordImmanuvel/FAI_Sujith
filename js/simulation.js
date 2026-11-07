@@ -43,16 +43,120 @@ class SimulationController {
         this.playbackTimer = null;
     }
 
+    /**
+     * Python API base URL. When the page itself is served by backend/app.py (port 5000)
+     * use the same origin (also works from a phone on the LAN); otherwise use localhost:5000.
+     */
     getApiBase() {
-        return (typeof window !== "undefined" && window.location && window.location.origin && window.location.origin.startsWith("http"))
-            ? window.location.origin
-            : "http://localhost:5000";
+        if (typeof window !== "undefined" && window.location &&
+            window.location.protocol.startsWith("http") && window.location.port === "5000") {
+            return window.location.origin;
+        }
+        return "http://localhost:5000";
     }
 
-    setEngineMode(mode) {
+    /** Fetch with a short timeout so an unreachable server never stalls the simulation. */
+    async fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            return await fetch(url, { ...options, signal: controller.signal, cache: "no-store" });
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    /** Returns true if the Python REST API answers /api/status. */
+    async checkServer() {
+        try {
+            const resp = await this.fetchWithTimeout(`${this.getApiBase()}/api/status`);
+            if (!resp.ok) return false;
+            const data = await resp.json();
+            return data && data.status === "online";
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /** POSTs to the Python API and returns the result in the same shape as the JS engine. */
+    async callPythonEngine(path, body, phase) {
+        const resp = await this.fetchWithTimeout(`${this.getApiBase()}${path}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (!data || data.status !== "success" || !data.result) throw new Error("Unexpected API response");
+        return phase === 1 ? this.normalizePhase1(data.result) : this.normalizePhase2(data.result);
+    }
+
+    normalizeSteps(steps) {
+        return (steps || []).map(st => ({
+            ...st,
+            pipeId: st.pipeId || st.pipeline_id || null,
+            highlightEdges: st.highlightEdges || (st.pipeline_id ? [st.pipeline_id] : [])
+        }));
+    }
+
+    normalizePhase1(r) {
+        return {
+            faultyPipeline: r.faulty_pipeline,
+            boundaryValves: r.boundaryValves || r.boundary_valves || [],
+            traversalOrder: r.traversalOrder || r.traversal_order || [],
+            visitedNodes: r.visitedNodes || r.visited_nodes || [],
+            parentMap: r.parentMap || r.parent_map || {},
+            steps: this.normalizeSteps(r.steps),
+            executionTimeMs: r.executionTimeMs || r.execution_time_ms
+        };
+    }
+
+    normalizePhase2(r) {
+        const m = r.metrics || {};
+        return {
+            closedValves: r.closedValves || r.closed_valves || [],
+            reachableNodes: r.reachableNodes || r.reachable_nodes || [],
+            unreachableNodes: r.unreachableNodes || r.unreachable_nodes || [],
+            operationalBuildings: r.operationalBuildings || r.operational_buildings || [],
+            affectedBuildings: r.affectedBuildings || r.affected_buildings || [],
+            totalBuildings: r.totalBuildings || r.total_buildings,
+            traversalOrder: r.traversalOrder || r.traversal_order || [],
+            parentMap: r.parentMap || r.parent_map || {},
+            steps: this.normalizeSteps(r.steps),
+            metrics: {
+                totalDemand: m.totalDemand ?? m.total_demand_m3_day,
+                operationalDemand: m.operationalDemand ?? m.operational_demand_m3_day,
+                affectedDemand: m.affectedDemand ?? m.affected_demand_m3_day,
+                protectionEfficiency: m.protectionEfficiency ?? m.protection_efficiency_pct,
+                ratioString: m.ratioString ?? m.reachability_ratio
+            },
+            executionTimeMs: r.executionTimeMs || r.execution_time_ms
+        };
+    }
+
+    /** Called whenever the Python engine was selected but could not be used. */
+    reportServerUnreachable() {
+        const msg = "Server not reachable – using browser engine";
+        if (this.ui.onEngineStatus) this.ui.onEngineStatus("fallback");
+        if (this.ui.onError) this.ui.onError(msg);
+        if (this.ui.onLogMessage) this.ui.onLogMessage(msg);
+    }
+
+    async setEngineMode(mode) {
         this.state.engineMode = mode;
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`Algorithmic engine switched to: ${mode === "python" ? "Python REST API Backend (Localhost:5000)" : "Client-Side High-Precision JavaScript"}`);
+            this.ui.onLogMessage(`Algorithm engine selected: ${mode === "python" ? "Python REST API (localhost:5000)" : "In-browser JavaScript"}`);
+        }
+        if (mode !== "python") {
+            if (this.ui.onEngineStatus) this.ui.onEngineStatus("js");
+            return;
+        }
+        const ok = await this.checkServer();
+        if (this.state.engineMode !== "python") return; // user switched back meanwhile
+        if (ok) {
+            if (this.ui.onEngineStatus) this.ui.onEngineStatus("python");
+        } else {
+            this.reportServerUnreachable();
         }
     }
 
@@ -107,7 +211,7 @@ class SimulationController {
                 isPlaying: false
             });
         }
-        if (this.ui.onLogMessage) this.ui.onLogMessage("Network restored to normal operational baseline. All pipelines pressurized.");
+        if (this.ui.onLogMessage) this.ui.onLogMessage("Network restored to normal operational baseline. All pipes and valves open.");
     }
 
     /**
@@ -163,12 +267,12 @@ class SimulationController {
                 queue: [pipe.u, pipe.v],
                 visitedNodes: [pipe.u, pipe.v],
                 traversalOrder: [pipe.u, pipe.v],
-                message: `Fault detected on Pipeline ${pipe.id} (${pipe.u} ↔ ${pipe.v}). Ready to initiate Phase 1 BFS.`,
+                message: `Fault detected on Pipeline ${pipe.id} (${pipe.u} ↔ ${pipe.v}). Next: Step 2 – Find Boundary Valves.`,
                 isPlaying: false
             });
         }
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`[FAULT DETECTED] Pipeline ${pipe.id} (${pipe.label}) ruptured between ${pipe.u} and ${pipe.v}! Estimated leak rate: ${pipe.flow} L/min.`);
+            this.ui.onLogMessage(`[FAULT DETECTED] Pipeline ${pipe.id} (${pipe.label}) ruptured between ${pipe.u} and ${pipe.v}. (Design flow: ${pipe.flow} L/min, reference only.)`);
         }
     }
 
@@ -177,7 +281,7 @@ class SimulationController {
      */
     async runFirstBFS(autoPlay = true, onComplete = null) {
         if (!this.state.selectedFault) {
-            if (this.ui.onError) this.ui.onError("Please select a faulty pipeline first.");
+            if (this.ui.onError) this.ui.onError("Step 1: select a pipe first.");
             return;
         }
 
@@ -190,15 +294,10 @@ class SimulationController {
         let result = null;
         if (this.state.engineMode === "python") {
             try {
-                const response = await fetch(`${this.getApiBase()}/api/bfs-boundary`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ fault_u: u, fault_v: v, pipe_id: pipeId })
-                });
-                const data = await response.json();
-                result = data.result;
+                result = await this.callPythonEngine("/api/bfs-boundary", { fault_u: u, fault_v: v, pipe_id: pipeId }, 1);
+                if (this.ui.onEngineStatus) this.ui.onEngineStatus("python");
             } catch (err) {
-                if (this.ui.onError) this.ui.onError("Python Backend connection failed. Falling back to Client JS Engine.");
+                this.reportServerUnreachable();
                 result = this.bfsEngine.runFirstBFS(u, v, pipeId);
             }
         } else {
@@ -217,7 +316,7 @@ class SimulationController {
 
         if (this.ui.onStateChange) this.ui.onStateChange(this.state);
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`Phase 1 BFS steps generated (${this.currentSteps.length} steps). Execution time: ${result.executionTimeMs || result.execution_time_ms} ms.`);
+            this.ui.onLogMessage(`Step 2 (1st BFS) generated (${this.currentSteps.length} steps). Execution time: ${result.executionTimeMs || result.execution_time_ms} ms.`);
         }
 
         if (autoPlay && this.state.speedMultiplier <= 4.5) {
@@ -234,7 +333,7 @@ class SimulationController {
      */
     closeBoundaryValves() {
         if (!this.state.phase1Result || this.state.boundaryValves.length === 0) {
-            if (this.ui.onError) this.ui.onError("Execute Phase 1 BFS first to identify boundary isolation valves.");
+            if (this.ui.onError) this.ui.onError("Run Step 2 (Find Boundary Valves) first.");
             return;
         }
 
@@ -259,12 +358,12 @@ class SimulationController {
                 visitedNodes: this.state.visitedNodesPhase1,
                 traversalOrder: this.state.traversalOrder,
                 boundaryValves: this.state.boundaryValves,
-                message: `Boundary valves [${this.state.closedValves.join(", ")}] have been closed. Damaged pipeline is isolated.`,
+                message: `Boundary valves [${this.state.closedValves.join(", ")}] have been closed. The broken pipe is cut off from the buildings behind those valves.`,
                 isPlaying: false
             });
         }
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`[VALVES CLOSED] Boundary isolation valves [${this.state.closedValves.join(", ")}] closed. Water leakage physically contained.`);
+            this.ui.onLogMessage(`[VALVES CLOSED] Boundary isolation valves [${this.state.closedValves.join(", ")}] closed.`);
         }
     }
 
@@ -273,7 +372,7 @@ class SimulationController {
      */
     async runSecondBFS(autoPlay = true, onComplete = null) {
         if (this.state.closedValves.length === 0 && (!this.state.boundaryValves || this.state.boundaryValves.length === 0)) {
-            if (this.ui.onError) this.ui.onError("Please identify and close boundary valves first.");
+            if (this.ui.onError) this.ui.onError("Complete Step 2 (Find Boundary Valves) and Step 3 (Close Valves) first.");
             return;
         }
 
@@ -287,15 +386,10 @@ class SimulationController {
         let result = null;
         if (this.state.engineMode === "python") {
             try {
-                const response = await fetch(`${this.getApiBase()}/api/bfs-water-supply`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ fault_u: u, fault_v: v, closed_valves: closed })
-                });
-                const data = await response.json();
-                result = data.result;
+                result = await this.callPythonEngine("/api/bfs-water-supply", { fault_u: u, fault_v: v, closed_valves: closed }, 2);
+                if (this.ui.onEngineStatus) this.ui.onEngineStatus("python");
             } catch (err) {
-                if (this.ui.onError) this.ui.onError("Python Backend connection failed. Falling back to Client JS Engine.");
+                this.reportServerUnreachable();
                 result = this.bfsEngine.runSecondBFS(u, v, closed);
             }
         } else {
@@ -315,7 +409,7 @@ class SimulationController {
 
         if (this.ui.onStateChange) this.ui.onStateChange(this.state);
         if (this.ui.onLogMessage) {
-            this.ui.onLogMessage(`Phase 2 BFS steps generated (${this.currentSteps.length} steps). Execution time: ${result.executionTimeMs || result.execution_time_ms} ms.`);
+            this.ui.onLogMessage(`Step 4 (2nd BFS) generated (${this.currentSteps.length} steps). Execution time: ${result.executionTimeMs || result.execution_time_ms} ms.`);
         }
 
         if (autoPlay && this.state.speedMultiplier <= 4.5) {
@@ -421,14 +515,14 @@ class SimulationController {
             this.pause();
             if (this.currentPhaseNum === 1) {
                 if (this.ui.onLogMessage) {
-                    this.ui.onLogMessage(`Phase 1 BFS traversal complete! Discovered boundary valves: [${this.state.boundaryValves.join(", ")}]. Click 'Close Boundary Valves' to continue.`);
+                    this.ui.onLogMessage(`Step 2 complete. Boundary valves found: [${this.state.boundaryValves.join(", ")}]. Click 'Step 3: Close valves' to continue.`);
                 }
             } else if (this.currentPhaseNum === 2) {
                 this.state.phase = "COMPLETE";
                 this.visualizer.setSimulationState(this.state);
                 if (this.ui.onStateChange) this.ui.onStateChange(this.state);
                 if (this.ui.onLogMessage) {
-                    this.ui.onLogMessage("Phase 2 BFS water propagation complete! All operational and affected buildings identified.");
+                    this.ui.onLogMessage("Second BFS complete. Supplied and cut-off buildings identified.");
                 }
             }
         }
@@ -487,7 +581,7 @@ class SimulationController {
                 this.pause();
                 if (this.currentPhaseNum === 1) {
                     if (this.ui.onLogMessage) {
-                        this.ui.onLogMessage(`Phase 1 BFS complete. Found boundary valves: [${this.state.boundaryValves.join(", ")}].`);
+                        this.ui.onLogMessage(`Step 2 complete. Boundary valves found: [${this.state.boundaryValves.join(", ")}]. Next: Step 3 – Close Valves.`);
                     }
                 } else if (this.currentPhaseNum === 2) {
                     this.state.phase = "COMPLETE";

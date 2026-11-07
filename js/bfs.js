@@ -211,7 +211,7 @@ class CampusWaterBFS {
      * Algorithmic Procedure:
      * 1. Simulate closing all boundary isolation valves (they physically block water flow).
      * 2. Remove the faulty pipeline from network circulation.
-     * 3. Start BFS from the Water Tower ('WT') at full hydraulic pressure.
+     * 3. Start BFS from the Water Tower ('WT').
      * 4. Discover all reachable junctions, valves, and buildings.
      * 5. Water cannot flow past closed boundary valves.
      * 6. Buildings reachable = OPERATIONAL (receiving water).
@@ -238,7 +238,7 @@ class CampusWaterBFS {
             visitedNodes: Array.from(reachableNodes),
             reachableNodes: Array.from(reachableNodes),
             traversalOrder: [...traversalOrder],
-            message: "Phase 2 BFS Initiated: Pressurized water releases from Central Water Tower ('WT') with boundary valves closed."
+            message: "Second BFS started at the Central Water Tower ('WT') with the boundary valves closed."
         });
 
         while (queue.length > 0) {
@@ -257,7 +257,7 @@ class CampusWaterBFS {
                 visitedNodes: Array.from(reachableNodes),
                 reachableNodes: Array.from(reachableNodes),
                 traversalOrder: [...traversalOrder],
-                message: `Tracing pressurized water propagation from ${curr} (${currNode.name}).`
+                message: `Dequeued ${curr} (${currNode.name}). Checking which neighbours it connects to.`
             });
 
             // If current node is a closed valve, water cannot pass through it to downstream pipes
@@ -290,7 +290,7 @@ class CampusWaterBFS {
                             visitedNodes: Array.from(reachableNodes),
                             reachableNodes: Array.from(reachableNodes),
                             traversalOrder: [...traversalOrder],
-                            message: `Water reached boundary valve ${neighbor} via ${pipe.label}. Flow is BLOCKED (Valve is CLOSED).`
+                            message: `Reached closed valve ${neighbor} via ${pipe.label}. The search stops here (valve is CLOSED).`
                         });
                     }
                     continue;
@@ -316,7 +316,7 @@ class CampusWaterBFS {
                         visitedNodes: Array.from(reachableNodes),
                         reachableNodes: Array.from(reachableNodes),
                         traversalOrder: [...traversalOrder],
-                        message: `Water reached ${nbrNode.type} ${neighbor} (${nbrNode.name}) via ${pipe.label}. Connection active!`
+                        message: `${nbrNode.type} ${neighbor} (${nbrNode.name}) is reachable via ${pipe.label}. Enqueued.`
                     });
                 }
             }

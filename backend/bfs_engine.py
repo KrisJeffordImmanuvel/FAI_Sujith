@@ -401,7 +401,7 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
     
     Algorithmic Rules:
     1. Simulate closing all boundary isolation valves (they block water transmission).
-    2. Remove the faulty pipeline segment from the hydraulic graph.
+    2. Remove the faulty pipeline segment from the graph.
     3. Start BFS from the primary supply source: Central Water Tower ('WT').
     4. Explore level-by-level across reachable pipelines.
     5. Water cannot pass through closed boundary valves or the severed line.
@@ -433,7 +433,7 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
         "reachableNodes": sorted(list(reachable_nodes)),
         "traversal_order": list(traversal_order),
         "traversalOrder": list(traversal_order),
-        "message": "Initiated water reachability BFS from Central Water Tower ('WT') at full system pressure."
+        "message": "Second BFS started at the Central Water Tower ('WT') with the boundary valves closed."
     })
     
     while queue:
@@ -455,7 +455,7 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
             "reachableNodes": sorted(list(reachable_nodes)),
             "traversal_order": list(traversal_order),
             "traversalOrder": list(traversal_order),
-            "message": f"Tracing pressurized flow out of {curr} ({nodes[curr]['name']})."
+            "message": f"Dequeued {curr} ({nodes[curr]['name']}). Checking which neighbours it connects to."
         })
         
         # If current node is a closed valve, water cannot flow out through it
@@ -492,7 +492,7 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
                         "reachableNodes": sorted(list(reachable_nodes)),
                         "traversal_order": list(traversal_order),
                         "traversalOrder": list(traversal_order),
-                        "message": f"Water reached closed boundary valve {nbr} via pipe {pipe['id']}. Valve blocks further downstream flow."
+                        "message": f"Reached closed valve {nbr} via pipe {pipe['id']}. The search stops here (valve is CLOSED)."
                     })
                 continue
                 
@@ -523,7 +523,7 @@ def run_second_bfs(nodes, pipelines, faulty_u, faulty_v, closed_valves):
                     "reachableNodes": sorted(list(reachable_nodes)),
                     "traversal_order": list(traversal_order),
                     "traversalOrder": list(traversal_order),
-                    "message": f"Water successfully propagated to {nbr_type} {nbr} ({nodes[nbr]['name']}) through pipeline {pipe['id']}."
+                    "message": f"{nbr_type} {nbr} ({nodes[nbr]['name']}) is reachable via pipe {pipe['id']}. Enqueued."
                 })
 
     all_buildings = [nid for nid, d in nodes.items() if d["type"] == "building"]
@@ -593,7 +593,7 @@ def generate_isolation_report(faulty_u, faulty_v, faulty_pipe_id, phase1_res, ph
             "diameter_mm": pipe_info.get("dia", 150) if pipe_info else 150,
             "length_m": pipe_info.get("length", 100) if pipe_info else 100,
             "normal_flow_lpm": pipe_info.get("flow", 1000) if pipe_info else 1000,
-            "severity": "CRITICAL HYDRAULIC RUPTURE"
+            "severity": "PIPE RUPTURE"
         },
         "phase1_valve_isolation": {
             "algorithm": "Multi-Source Level-Order Breadth-First Search",

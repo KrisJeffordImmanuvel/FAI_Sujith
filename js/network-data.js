@@ -212,76 +212,64 @@ const CAMPUS_NETWORK_DATA = {
     ],
 
     // Pre-configured Demonstration Scenarios
+    // Expected results below were verified by running both BFS engines on every pipe.
     scenarios: [
         {
-            id: "scenario_hostel_line",
-            title: "Scenario 1: Hostel Residential Feed Rupture",
-            fault_u: "V1",
-            fault_v: "Hostel",
-            pipe_id: "P3",
-            badge: "Residential",
-            badgeColor: "blue",
-            severity: "High (Residential impact)",
-            expectedBoundaryValves: ["V1"],
-            expectedAffectedBuildings: ["Hostel"],
-            expectedOperationalBuildings: ["Laboratory", "Canteen", "Academic", "Library"],
-            description: "A lateral pipeline burst between Valve 1 and the Hostel Complex. Demonstrates single-valve boundary isolation where only Hostel is cut off while all academic facilities stay supplied."
-        },
-        {
-            id: "scenario_lab_lateral",
-            title: "Scenario 2: Research Laboratory Service Fracture",
-            fault_u: "V2",
-            fault_v: "Laboratory",
-            pipe_id: "P7",
-            badge: "Research",
-            badgeColor: "purple",
-            severity: "Medium (Chemical safety priority)",
-            expectedBoundaryValves: ["V2"],
-            expectedAffectedBuildings: ["Laboratory"],
-            expectedOperationalBuildings: ["Hostel", "Canteen", "Academic", "Library"],
-            description: "A high-pressure pipe fracture feeding the Science & Research Labs. The BFS algorithm targets Valve 2, maintaining stable water flow to student housing and classrooms."
-        },
-        {
-            id: "scenario_canteen_branch",
-            title: "Scenario 3: Food Court Supply Conduit Burst",
-            fault_u: "V3",
-            fault_v: "Canteen",
-            pipe_id: "P9",
-            badge: "Dining",
-            badgeColor: "amber",
-            severity: "Medium (Food services disruption)",
-            expectedBoundaryValves: ["V3"],
-            expectedAffectedBuildings: ["Canteen"],
-            expectedOperationalBuildings: ["Hostel", "Laboratory", "Academic", "Library"],
-            description: "Sub-surface pipe failure supplying the campus dining complex. Demonstrates localized southern isolation via Valve 3 without disturbing academic wings."
-        },
-        {
-            id: "scenario_academic_rupture",
-            title: "Scenario 4: East Academic Quadrant Pipe Rupture",
-            fault_u: "V4",
-            fault_v: "Academic",
-            pipe_id: "P14",
-            badge: "Academic",
-            badgeColor: "orange",
-            severity: "Critical (Instructional block affected)",
-            expectedBoundaryValves: ["V4"],
-            expectedAffectedBuildings: ["Academic", "Library"],
-            expectedOperationalBuildings: ["Hostel", "Laboratory", "Canteen"],
-            description: "A major line fracture near the Academic Block. Because Valve 4 protects both the Academic Block and Library sub-loop, closing V4 isolates both buildings while the rest of the campus remains active."
-        },
-        {
-            id: "scenario_central_header",
-            title: "Scenario 5: North Ring Main Transmission Rupture",
-            fault_u: "J1",
-            fault_v: "J2",
-            pipe_id: "P4",
-            badge: "Trunk Main",
+            id: "scenario_tower_trunk",
+            title: "Water Tower Trunk Rupture (Worst Case)",
+            fault_u: "WT",
+            fault_v: "J1",
+            pipe_id: "P1",
+            badge: "Worst Case",
             badgeColor: "red",
-            severity: "Severe (Inter-junction loop failure)",
+            severity: "Severe (whole campus)",
             expectedBoundaryValves: ["V1", "V2", "V3", "V4"],
             expectedAffectedBuildings: ["Hostel", "Laboratory", "Canteen", "Academic", "Library"],
             expectedOperationalBuildings: [],
-            description: "A severe transmission break along the primary North Ring (J1-J2). Multi-source BFS discovers all boundary valves across the interconnected grid to safeguard against massive reservoir drainage."
+            description: "P1 is the only pipe leaving the water tower. With it broken, nothing downstream can be fed, and BFS has to close all four valves V1–V4 to isolate the rupture. All 5 buildings lose supply."
+        },
+        {
+            id: "scenario_hostel_line",
+            title: "Hostel Service Line Rupture (Single Building)",
+            fault_u: "V1",
+            fault_v: "Hostel",
+            pipe_id: "P3",
+            badge: "Single Building",
+            badgeColor: "blue",
+            severity: "Low (one building)",
+            expectedBoundaryValves: ["V1"],
+            expectedAffectedBuildings: ["Hostel"],
+            expectedOperationalBuildings: ["Laboratory", "Canteen", "Academic", "Library"],
+            description: "P3 runs from valve V1 to the Hostel. One endpoint is already a valve and the other side is a dead end, so BFS closes only V1. Only the Hostel loses supply; the other 4 buildings stay connected."
+        },
+        {
+            id: "scenario_academic_lateral",
+            title: "Academic Block Lateral Rupture (Shared Valve)",
+            fault_u: "V4",
+            fault_v: "Academic",
+            pipe_id: "P14",
+            badge: "Shared Valve",
+            badgeColor: "orange",
+            severity: "Medium (two buildings)",
+            expectedBoundaryValves: ["V4"],
+            expectedAffectedBuildings: ["Academic", "Library"],
+            expectedOperationalBuildings: ["Hostel", "Laboratory", "Canteen"],
+            description: "P14 links valve V4 to the Academic Block. BFS closes only V4, but V4 also feeds the Library, so 2 buildings lose supply even though only one pipe broke."
+        },
+        {
+            id: "scenario_bypass_loop",
+            title: "North-East Bypass Loop Rupture (Looped Pipe)",
+            fault_u: "J2",
+            fault_v: "J4",
+            pipe_id: "P16",
+            badge: "Looped Pipe",
+            badgeColor: "purple",
+            severity: "Severe (no loop valves)",
+            expectedBoundaryValves: ["V1", "V2", "V3", "V4"],
+            expectedAffectedBuildings: ["Hostel", "Laboratory", "Canteen", "Academic", "Library"],
+            expectedOperationalBuildings: [],
+            description: "P16 is part of a loop, so water could still reach J4 another way (via J5). But BFS must isolate the rupture itself, and the loop pipes have no valves of their own. From J2 and J4 the search spreads through every junction before meeting a valve, so all four building valves close and all 5 buildings lose supply.",
+            note: "Why no rerouting? Valves exist only on the building branches (V1–V4). Isolating a loop pipe without cutting buildings would need valves on the loop pipes themselves."
         }
     ]
 };

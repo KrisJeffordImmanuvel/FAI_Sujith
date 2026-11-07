@@ -38,7 +38,7 @@ class ReportManager {
                     <td>${b.id}</td>
                     <td>${b.demand || 50} m³/day</td>
                     <td><span class="badge-status badge-success">● OPERATIONAL</span></td>
-                    <td class="text-muted">Direct supply sustained through active bypass loops.</td>
+                    <td class="text-muted">Still connected to the water tower.</td>
                 </tr>
             `;
         });
@@ -93,9 +93,9 @@ class ReportManager {
                         <div class="kpi-sub">${protectionPct}% Supply Efficiency</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-label">Estimated Water Conserved</div>
+                        <div class="kpi-label">Rough Water-Loss Estimate</div>
                         <div class="kpi-value highlight-blue">${waterSavedLiters.toLocaleString()} L</div>
-                        <div class="kpi-sub">Via Automated Fast Isolation</div>
+                        <div class="kpi-sub">Illustrative: design flow × 0.85 × 45 min</div>
                     </div>
                 </div>
 
@@ -120,7 +120,7 @@ class ReportManager {
                             <span class="t-val">${fault.length} meters</span>
                         </div>
                         <div class="telemetry-item">
-                            <span class="t-label">Normal Flow Rate:</span>
+                            <span class="t-label">Design Flow (reference):</span>
                             <span class="t-val">${fault.flow} Liters / minute</span>
                         </div>
                         <div class="telemetry-item">
@@ -132,10 +132,10 @@ class ReportManager {
 
                 <!-- BFS Phase 1 Valve Discovery -->
                 <div class="report-section">
-                    <h3 class="section-heading">2. First BFS: Boundary Isolation Valve Discovery</h3>
+                    <h3 class="section-heading">2. Step 2 – First BFS: Boundary Valves</h3>
                     <p class="section-desc">
                         Multi-source Breadth-First Search was initiated from endpoints <code>${fault.u}</code> and <code>${fault.v}</code>.
-                        Exploration expanded level-by-level across connected junctions and buildings, halting strictly upon encountering isolation valve nodes to define the minimal isolation perimeter.
+                        The search expanded one level (one pipe) at a time and stopped each branch at the first valve it met, so it found the nearest valves that isolate the rupture (fewest hops).
                     </p>
                     <div class="telemetry-grid">
                         <div class="telemetry-item">
@@ -151,7 +151,7 @@ class ReportManager {
                             <span class="t-val text-warning font-bold">${phase1.boundaryValves.map(v => `${v} (CLOSED)`).join(", ")}</span>
                         </div>
                         <div class="telemetry-item">
-                            <span class="t-label">Phase 1 Search Runtime:</span>
+                            <span class="t-label">First BFS Runtime:</span>
                             <span class="t-val font-mono">${phase1.timeMs} ms</span>
                         </div>
                     </div>
@@ -159,10 +159,10 @@ class ReportManager {
 
                 <!-- BFS Phase 2 Building Reachability Table -->
                 <div class="report-section">
-                    <h3 class="section-heading">3. Second BFS: Campus Building Water Supply Impact</h3>
+                    <h3 class="section-heading">3. Step 4 – Second BFS: Building Supply</h3>
                     <p class="section-desc">
                         Following physical closure of boundary valves, a reachability BFS was executed starting from the primary reservoir (<strong>Water Tower 'WT'</strong>).
-                        The algorithm verified hydraulic connectivity through unblocked loops and branches.
+                        Buildings it reached are still connected to the tower through open pipes; buildings it could not reach are cut off. (Connectivity only; flow and pressure are not simulated.)
                     </p>
 
                     <div class="table-responsive">
