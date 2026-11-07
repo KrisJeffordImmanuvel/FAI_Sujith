@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateDashboardMetrics(state);
             updateControlButtons(state);
             updateStaticInspectorWidgets(state);
+            updateImpactPanel(state);
         },
         onPlayStateChange: (isPlaying) => {
             updatePlayPauseButton(isPlaying);
@@ -88,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Populate selectors
     populateDropdowns();
     populateScenarios();
+    setupWorstFaultAnalysis();
     setupNavigation();
     setupSimulationButtons();
     setupKeyboardShortcuts();
@@ -246,6 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (targetPane) targetPane.classList.add("active");
         if (targetBtn) targetBtn.classList.add("active");
+        window.scrollTo(0, 0);
 
         if (tabId === "tab-simulation" && visualizer) {
             setTimeout(() => visualizer.render(), 50);
@@ -490,6 +493,115 @@ document.addEventListener("DOMContentLoaded", () => {
     function markReportShown() {
         reportShown = true;
         updateControlButtons(simController.state);
+    }
+
+    // Impact panel: shown once a simulation has finished (Step 4 complete)
+    function updateImpactPanel(state) {
+        const panel = document.getElementById("impact-panel");
+        if (!panel) return;
+        const p1 = state.phase1Result;
+        const p2 = state.phase2Result;
+        if (state.phase !== "COMPLETE" || !p1 || !p2 || !state.selectedFault) {
+            panel.style.display = "none";
+            return;
+        }
+
+        const totalBuildings = Object.values(data.nodes).filter(n => n.type === "building").length;
+        const cut = p2.affectedBuildings || [];
+        const valves = state.closedValves.length ? state.closedValves : (p1.boundaryValves || []);
+        const steps1 = (p1.steps || []).length;
+        const steps2 = (p2.steps || []).length;
+        const f = state.selectedFault;
+
+        document.getElementById("impact-pipe-tag").textContent = `${f.pipeId}: ${f.u} ↔ ${f.v}`;
+        document.getElementById("impact-buildings-count").textContent = `${cut.length} / ${totalBuildings}`;
+        document.getElementById("impact-buildings-list").textContent =
+            cut.length ? cut.map(id => data.nodes[id].name).join(", ") : "None – every building is still supplied";
+        document.getElementById("impact-valves-count").textContent = valves.length;
+        document.getElementById("impact-valves-list").textContent = valves.length ? [...valves].sort().join(", ") : "None";
+        document.getElementById("impact-steps-total").textContent = steps1 + steps2;
+        document.getElementById("impact-steps-split").textContent = `1st BFS: ${steps1} + 2nd BFS: ${steps2}`;
+        panel.style.display = "";
+    }
+
+    // Worst single fault: break each pipe in turn and rank by buildings cut off
+    function analyseAllSingleFaults() {
+        const rows = data.pipelines.map(pipe => {
+            const r1 = bfsEngine.runFirstBFS(pipe.u, pipe.v, pipe.id);
+            const r2 = bfsEngine.runSecondBFS(pipe.u, pipe.v, r1.boundaryValves);
+            return {
+                pipe,
+                valves: r1.boundaryValves,
+                cut: r2.affectedBuildings,
+                steps: r1.steps.length + r2.steps.length
+            };
+        });
+        const pipeNum = id => parseInt(id.replace(/\D/g, ""), 10);
+        rows.sort((a, b) =>
+            b.cut.length - a.cut.length ||
+            b.valves.length - a.valves.length ||
+            pipeNum(a.pipe.id) - pipeNum(b.pipe.id));
+        // Standard competition ranking: equal impact gets equal rank
+        rows.forEach((r, i) => {
+            r.rank = (i > 0 && rows[i - 1].cut.length === r.cut.length) ? rows[i - 1].rank : i + 1;
+        });
+        return rows;
+    }
+
+    function setupWorstFaultAnalysis() {
+        const btn = document.getElementById("btn-worst-fault");
+        const out = document.getElementById("worst-fault-results");
+        if (!btn || !out) return;
+
+        btn.addEventListener("click", () => {
+            const rows = analyseAllSingleFaults();
+            const total = Object.values(data.nodes).filter(n => n.type === "building").length;
+            const worst = rows.filter(r => r.cut.length === rows[0].cut.length);
+            const least = rows.filter(r => r.cut.length === rows[rows.length - 1].cut.length);
+
+            const summary = `
+                <div class="worst-summary">
+                    <strong>Worst case:</strong> ${worst.length} of ${rows.length} pipes cut off ${rows[0].cut.length} of ${total} buildings
+                    (${worst.map(r => r.pipe.id).join(", ")}).
+                    <strong>Least severe:</strong> ${least.map(r => r.pipe.id).join(", ")}
+                    (${least[0].cut.length} building${least[0].cut.length === 1 ? "" : "s"}).
+                    ${worst.length > 1 ? "Many pipes tie for worst because the only valves sit on the building branches, so breaking any junction or loop pipe forces all four valves shut." : ""}
+                </div>`;
+
+            const body = rows.map(r => `
+                <tr class="${r.cut.length === total ? "row-affected" : r.cut.length <= 1 ? "row-operational" : ""}">
+                    <td><strong>${r.rank}</strong></td>
+                    <td><strong>${r.pipe.id}</strong><div class="worst-pipe-label">${r.pipe.label}</div></td>
+                    <td>${r.pipe.u} ↔ ${r.pipe.v}</td>
+                    <td>${r.valves.join(", ")}</td>
+                    <td><strong>${r.cut.length} / ${total}</strong><div class="worst-pipe-label">${r.cut.join(", ")}</div></td>
+                    <td>${r.steps}</td>
+                    <td><button class="btn btn-sm btn-outline worst-sim-btn" data-pipe="${r.pipe.id}">Simulate</button></td>
+                </tr>`).join("");
+
+            out.innerHTML = summary + `
+                <div class="table-responsive">
+                    <table class="report-table worst-table">
+                        <thead>
+                            <tr><th>Rank</th><th>Pipe</th><th>Endpoints</th><th>Valves closed</th><th>Buildings cut off</th><th>BFS steps</th><th></th></tr>
+                        </thead>
+                        <tbody>${body}</tbody>
+                    </table>
+                </div>`;
+
+            out.querySelectorAll(".worst-sim-btn").forEach(b => {
+                b.addEventListener("click", () => {
+                    const pipe = data.pipelines.find(p => p.id === b.getAttribute("data-pipe"));
+                    document.getElementById("fault-pipe-select").value = pipe.id;
+                    document.getElementById("endpoint-u-select").value = pipe.u;
+                    document.getElementById("endpoint-v-select").value = pipe.v;
+                    switchTab("tab-simulation");
+                    simController.startFullSimulation(pipe.u, pipe.v, pipe.id);
+                });
+            });
+            btn.textContent = "Run Again";
+            showToast(`Analysed ${rows.length} single-pipe ruptures.`, "success");
+        });
     }
 
     function updateStaticInspectorWidgets(state) {

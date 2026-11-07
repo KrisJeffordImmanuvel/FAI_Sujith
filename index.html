@@ -217,6 +217,20 @@
                     <!-- Populated dynamically via JS -->
                 </div>
             </div>
+
+            <!-- Worst Single Fault Analysis -->
+            <div class="card" id="worst-fault-card" style="margin-top: 1.5rem;">
+                <div class="card-header-flex">
+                    <h2 class="card-title">
+                        <span>🧮 Worst Single Fault Analysis</span>
+                    </h2>
+                    <button class="btn btn-primary btn-sm" id="btn-worst-fault">Find Worst Single Fault</button>
+                </div>
+                <p class="worst-intro">
+                    Simulates a rupture on every pipe, one at a time, with the browser BFS engine and ranks the pipes by how many buildings lose supply.
+                </p>
+                <div id="worst-fault-results"></div>
+            </div>
         </section>
 
         <!-- ===================================================================
@@ -352,13 +366,26 @@
                             <span style="font-size: 0.9rem; font-weight: 700; color: var(--deep-navy);">Interactive Campus Water Network Graph</span>
                             <span class="status-pill status-processing" style="font-size: 0.7rem;">Click pipes to break &bull; Drag nodes</span>
                         </div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                        <div class="toolbar-hint toolbar-hint-desktop">
                             Scroll to Zoom &bull; Drag background to Pan
+                        </div>
+                        <div class="toolbar-hint toolbar-hint-phone">
+                            Swipe sideways to see the whole network
                         </div>
                     </div>
 
                     <div id="network-canvas-container" class="visualizer-wrapper">
                         <!-- Rendered by visualizer.js -->
+                    </div>
+
+                    <!-- Map Legend -->
+                    <div class="graph-legend" aria-label="Legend">
+                        <span class="legend-item"><span class="lg-pipe"></span> Normal pipe</span>
+                        <span class="legend-item"><span class="lg-pipe lg-pipe-ruptured"></span> Ruptured pipe</span>
+                        <span class="legend-item"><span class="lg-valve"></span> Open valve</span>
+                        <span class="legend-item"><span class="lg-valve lg-valve-closed"></span> Closed valve</span>
+                        <span class="legend-item"><span class="lg-building"></span> Supplied building</span>
+                        <span class="legend-item"><span class="lg-building lg-building-cut"></span> Cut-off building</span>
                     </div>
 
                     <!-- Step-by-Step Playback Controls Bar -->
@@ -392,6 +419,33 @@
                                 <div id="playback-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Impact Panel (shown after each completed simulation) -->
+            <div class="card impact-panel" id="impact-panel" style="display: none;">
+                <div class="card-header-flex">
+                    <h3 class="card-title" style="font-size: 1.05rem;">
+                        <span>📊 Impact of This Rupture</span>
+                    </h3>
+                    <span id="impact-pipe-tag" class="status-pill status-fault"></span>
+                </div>
+                <div class="impact-grid">
+                    <div class="impact-stat impact-stat-red">
+                        <div class="impact-label">Buildings cut off</div>
+                        <div class="impact-value" id="impact-buildings-count">0 / 5</div>
+                        <div class="impact-sub" id="impact-buildings-list">None</div>
+                    </div>
+                    <div class="impact-stat impact-stat-amber">
+                        <div class="impact-label">Valves closed</div>
+                        <div class="impact-value" id="impact-valves-count">0</div>
+                        <div class="impact-sub" id="impact-valves-list">None</div>
+                    </div>
+                    <div class="impact-stat impact-stat-blue">
+                        <div class="impact-label">BFS steps taken</div>
+                        <div class="impact-value" id="impact-steps-total">0</div>
+                        <div class="impact-sub" id="impact-steps-split"></div>
                     </div>
                 </div>
             </div>

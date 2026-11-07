@@ -125,16 +125,6 @@ class NetworkVisualizer {
                     </button>
                 </div>
 
-                <!-- Interactive Legend -->
-                <div class="canvas-legend">
-                    <div class="legend-item"><span class="legend-color normal-pipe"></span> Normal Pipe</div>
-                    <div class="legend-item"><span class="legend-color faulty-pipe"></span> Faulty Pipe</div>
-                    <div class="legend-item"><span class="legend-color valve-open"></span> Valve Open</div>
-                    <div class="legend-item"><span class="legend-color valve-closed"></span> Boundary Valve (Closed)</div>
-                    <div class="legend-item"><span class="legend-color building-supplied"></span> Building Receiving Water</div>
-                    <div class="legend-item"><span class="legend-color building-deprived"></span> Building Isolated (No Water)</div>
-                </div>
-
                 <!-- Hover Tooltip -->
                 <div id="graph-tooltip" class="graph-tooltip hidden"></div>
             </div>
