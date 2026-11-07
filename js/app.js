@@ -68,6 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
         onEngineStatus: (status) => {
             setEngineBadge(status);
         },
+        onNotice: (msg) => {
+            showToast(msg, "info");
+        },
         onReportReady: (reportData) => {
             if (reportManager) reportManager.renderReport(reportData);
             markReportShown();
@@ -193,8 +196,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p class="sc-desc">${sc.description}</p>
                 ${sc.note ? `<p class="sc-note">${sc.note}</p>` : ""}
                 <div class="sc-expected">
-                    <span>Valves closed: <strong>${sc.expectedBoundaryValves.join(", ")}</strong></span>
+                    <span>Valves closed: <strong>${sc.expectedBoundaryValves.length ? sc.expectedBoundaryValves.join(", ") : "None"}</strong></span>
                     <span>Buildings cut off: <strong>${sc.expectedAffectedBuildings.length} of 5</strong></span>
+                    <span>Leak stopped: <strong>${sc.expectedLeakStopped ? "Yes" : "No"}</strong></span>
                 </div>
                 <div class="sc-meta">
                     <span>Target: <strong>${sc.pipe_id} (${sc.fault_u} ↔ ${sc.fault_v})</strong></span>
@@ -515,10 +519,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.getElementById("impact-pipe-tag").textContent = `${f.pipeId}: ${f.u} ↔ ${f.v}`;
         document.getElementById("impact-buildings-count").textContent = `${cut.length} / ${totalBuildings}`;
+        document.getElementById("impact-buildings-stat").className = `impact-stat ${cut.length ? "impact-stat-red" : "impact-stat-green"}`;
         document.getElementById("impact-buildings-list").textContent =
             cut.length ? cut.map(id => data.nodes[id].name).join(", ") : "None – every building is still supplied";
+        const leakStopped = p2.leakIsolated !== false;
         document.getElementById("impact-valves-count").textContent = valves.length;
-        document.getElementById("impact-valves-list").textContent = valves.length ? [...valves].sort().join(", ") : "None";
+        document.getElementById("impact-valves-list").textContent = valves.length
+            ? [...valves].sort().join(", ")
+            : "None – no valve stands between the tower and this pipe";
+        document.getElementById("impact-leak-value").textContent = leakStopped ? "Yes" : "No";
+        document.getElementById("impact-leak-sub").textContent = leakStopped
+            ? "The burst pipe is cut off from the water tower"
+            : "Leak continues until the pipe is repaired or the tower is shut";
+        document.getElementById("impact-leak-stat").className = `impact-stat ${leakStopped ? "impact-stat-green" : "impact-stat-red"}`;
         document.getElementById("impact-steps-total").textContent = steps1 + steps2;
         document.getElementById("impact-steps-split").textContent = `1st BFS: ${steps1} + 2nd BFS: ${steps2}`;
         panel.style.display = "";
@@ -533,13 +546,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 pipe,
                 valves: r1.boundaryValves,
                 cut: r2.affectedBuildings,
+                leakStopped: r2.leakIsolated !== false,
                 steps: r1.steps.length + r2.steps.length
             };
         });
         const pipeNum = id => parseInt(id.replace(/\D/g, ""), 10);
+        // Most buildings cut off first; on a tie, a leak that cannot be stopped ranks as worse
         rows.sort((a, b) =>
             b.cut.length - a.cut.length ||
-            b.valves.length - a.valves.length ||
+            Number(a.leakStopped) - Number(b.leakStopped) ||
             pipeNum(a.pipe.id) - pipeNum(b.pipe.id));
         // Standard competition ranking: equal impact gets equal rank
         rows.forEach((r, i) => {
@@ -559,22 +574,25 @@ document.addEventListener("DOMContentLoaded", () => {
             const worst = rows.filter(r => r.cut.length === rows[0].cut.length);
             const least = rows.filter(r => r.cut.length === rows[rows.length - 1].cut.length);
 
+            const pipeNumOf = id => parseInt(id.replace(/\D/g, ""), 10);
+            const plural = n => `${n} building${n === 1 ? "" : "s"}`;
+            const notIsolatable = rows.filter(r => !r.leakStopped).sort((a, b) => pipeNumOf(a.pipe.id) - pipeNumOf(b.pipe.id));
             const summary = `
                 <div class="worst-summary">
-                    <strong>Worst case:</strong> ${worst.length} of ${rows.length} pipes cut off ${rows[0].cut.length} of ${total} buildings
-                    (${worst.map(r => r.pipe.id).join(", ")}).
-                    <strong>Least severe:</strong> ${least.map(r => r.pipe.id).join(", ")}
-                    (${least[0].cut.length} building${least[0].cut.length === 1 ? "" : "s"}).
-                    ${worst.length > 1 ? "Many pipes tie for worst because the only valves sit on the building branches, so breaking any junction or loop pipe forces all four valves shut." : ""}
+                    <strong>Worst case:</strong> ${worst.map(r => r.pipe.id).join(", ")} cut${worst.length === 1 ? "s" : ""} off ${rows[0].cut.length} of ${total} buildings.
+                    <strong>Least severe:</strong> ${least.map(r => r.pipe.id).join(", ")} (${plural(least[0].cut.length)}).
+                    ${notIsolatable.length ? `<br><strong>Cannot be isolated by valves:</strong> ${notIsolatable.length} of ${rows.length} pipes
+                    (${notIsolatable.map(r => r.pipe.id).join(", ")}). They connect to the water tower without passing a valve, so no valve is closed and the leak continues until repair.` : ""}
                 </div>`;
 
             const body = rows.map(r => `
-                <tr class="${r.cut.length === total ? "row-affected" : r.cut.length <= 1 ? "row-operational" : ""}">
+                <tr class="${r.cut.length === total ? "row-affected" : ""}">
                     <td><strong>${r.rank}</strong></td>
                     <td><strong>${r.pipe.id}</strong><div class="worst-pipe-label">${r.pipe.label}</div></td>
                     <td>${r.pipe.u} ↔ ${r.pipe.v}</td>
-                    <td>${r.valves.join(", ")}</td>
+                    <td>${r.valves.length ? r.valves.join(", ") : "None"}</td>
                     <td><strong>${r.cut.length} / ${total}</strong><div class="worst-pipe-label">${r.cut.join(", ")}</div></td>
+                    <td>${r.leakStopped ? '<span class="leak-yes">Yes</span>' : '<span class="leak-no">No</span>'}</td>
                     <td>${r.steps}</td>
                     <td><button class="btn btn-sm btn-outline worst-sim-btn" data-pipe="${r.pipe.id}">Simulate</button></td>
                 </tr>`).join("");
@@ -583,7 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="table-responsive">
                     <table class="report-table worst-table">
                         <thead>
-                            <tr><th>Rank</th><th>Pipe</th><th>Endpoints</th><th>Valves closed</th><th>Buildings cut off</th><th>BFS steps</th><th></th></tr>
+                            <tr><th>Rank</th><th>Pipe</th><th>Endpoints</th><th>Valves closed</th><th>Buildings cut off</th><th>Leak stopped?</th><th>BFS steps</th><th></th></tr>
                         </thead>
                         <tbody>${body}</tbody>
                     </table>
@@ -608,7 +626,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const valvesContainer = document.getElementById("live-valves-display");
         if (valvesContainer) {
             if (state.boundaryValves.length === 0) {
-                valvesContainer.innerHTML = `<span class="text-muted">None discovered yet</span>`;
+                const none = state.phase1Result && state.phase1Result.isolatable === false
+                    ? "None – no valve can isolate this pipe"
+                    : "None discovered yet";
+                valvesContainer.innerHTML = `<span class="text-muted">${none}</span>`;
             } else {
                 valvesContainer.innerHTML = state.boundaryValves.map(v => `
                     <span class="valve-pill ${state.closedValves.includes(v) ? 'valve-pill-closed' : 'valve-pill-open'}">

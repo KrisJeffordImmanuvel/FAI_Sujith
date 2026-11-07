@@ -29,13 +29,13 @@ This web-based interactive tool models the college campus water distribution net
 1. **First BFS (Boundary Isolation Valve Identification):**
    - Multi-source level-order search starting simultaneously from both endpoints of the ruptured pipe.
    - Explores outwards through junctions and buildings.
-   - Halts immediately upon encountering any isolation valve (`V1`, `V2`, `V3`, `V4`), so it finds the nearest valves that isolate the rupture (fewest hops).
+   - Halts at any isolation valve (`V1`, `V2`, `V3`, `V4`) and keeps only the valves on the water-tower side, so it finds the nearest valves that isolate the rupture (fewest hops) without closing unnecessary ones. If it reaches the water tower first, the pipe cannot be isolated by valves.
 2. **Second BFS (Campus Building Reachability & Water Supply Assessment):**
    - Simulates physical closure of the identified boundary valves and removes the damaged pipeline.
    - Starts BFS from the primary source (**Central Water Tower 'WT'**).
    - Identifies which campus buildings are still connected to the tower through open pipes (marked **Green**) vs which are cut off (marked **Grey/Red**). Connectivity only: flow rates and pressure are not simulated.
 3. **Automated Engineering Report Generation:**
-   - Produces a formal isolation report detailing pipeline specifications, BFS traversal order, identified boundary valves, affected buildings, and a rough (illustrative) water-loss estimate, exportable/printable to PDF.
+   - Produces a formal isolation report detailing pipeline specifications, BFS traversal order, identified boundary valves, affected buildings, and a rough (illustrative) water-saved estimate, exportable/printable to PDF.
 
 ---
 
@@ -117,16 +117,16 @@ Simply double-click `index.html` to open it in any modern browser! The built-in 
 ## 🧪 5. Demonstration Fault Scenarios
 
 1. **Water Tower Trunk Rupture – worst case (`WT ↔ J1`, P1)**
-   - **Boundary Valves:** `V1, V2, V3, V4` · **Cut off:** all 5 buildings (P1 is the only pipe leaving the tower)
+   - **Valves closed:** none (no valve between the tower and P1) · **Cut off:** all 5 buildings · **Leak stopped:** no
 2. **Hostel Service Line Rupture – single building (`V1 ↔ Hostel`, P3)**
-   - **Boundary Valve:** `V1` · **Cut off:** Hostel only
+   - **Valves closed:** `V1` · **Cut off:** Hostel only · **Leak stopped:** yes
 3. **Academic Block Lateral Rupture – shared valve (`V4 ↔ Academic`, P14)**
-   - **Boundary Valve:** `V4` · **Cut off:** Academic Block and Library (both sit behind V4)
+   - **Valves closed:** `V4` · **Cut off:** Academic Block and Library (both sit behind V4) · **Leak stopped:** yes
 4. **North-East Bypass Loop Rupture – looped pipe (`J2 ↔ J4`, P16)**
-   - **Boundary Valves:** `V1, V2, V3, V4` · **Cut off:** all 5 buildings
-   - The loop pipes have no valves of their own, so BFS spreads through every junction before meeting a valve. Water could still reach J4 via J5, but isolating the rupture needs all four building valves closed. Rerouting without cutting buildings would need valves on the loop pipes.
+   - **Valves closed:** none · **Cut off:** none (water reroutes via J5) · **Leak stopped:** no
+   - The loop pipes have no valves of their own, so no valve stands between the tower and P16. Closing building valves would not stop the leak; it would only cut off buildings.
 
-> BFS here is unweighted: it finds the nearest valves that isolate the rupture (fewest hops). It does not use pipe length, does not promise the fewest buildings cut off, and does not simulate flow rates or pressure.
+> First BFS: spreads from both ends of the burst pipe, stops at each valve, and keeps only the valves on the water-tower side (the nearest valves that isolate the rupture, in fewest hops). If it reaches the water tower without passing a valve, the pipe cannot be isolated and no valve is closed. BFS does not use pipe length and does not simulate flow rates or pressure.
 
 ---
 
