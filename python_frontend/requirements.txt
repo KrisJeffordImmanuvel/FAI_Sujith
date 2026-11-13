@@ -1,0 +1,4 @@
+# Packages for the Python (Streamlit) front end only.
+# The HTML/JS site and backend/app.py need nothing extra.
+streamlit>=1.50,<2
+plotly>=5.22
