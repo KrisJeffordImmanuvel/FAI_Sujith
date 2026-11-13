@@ -76,6 +76,22 @@ Simply double-click `index.html` to open it in any modern browser! The built-in 
 
 ---
 
+## 🐍 Python Front End (Streamlit)
+
+A second front end written entirely in Python lives in `python_frontend/`. It uses the same Python BFS engine
+(`backend/bfs_engine.py`), so its results match the HTML/JavaScript site exactly. The HTML site is unchanged.
+
+```bash
+pip install -r python_frontend/requirements.txt
+streamlit run python_frontend/streamlit_app.py
+```
+
+Then open `http://localhost:8501`. Pages: Dashboard (scenarios, worst single fault), Simulation (interactive network
+graph, Steps 1–5, step slider and animation, impact panel), BFS Inspector, BFS Theory, Isolation Report (downloadable)
+and About. Click a pipe label on the graph to break that pipe.
+
+---
+
 ## 📊 4. Campus Water Network Topology
 
 ### Nodes (14 Nodes):
