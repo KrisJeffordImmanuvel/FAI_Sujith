@@ -165,23 +165,23 @@ def get_default_network():
     }
 
     pipelines = [
-        {"id": "P1", "u": "WT", "v": "J1", "label": "Main Trunk Feeder", "dia": 300, "length": 150, "flow": 2800},
-        {"id": "P2", "u": "J1", "v": "V1", "label": "Hostel Approach Line", "dia": 150, "length": 90, "flow": 950},
+        {"id": "P1", "u": "WT", "v": "J1", "label": "Main Supply Trunk", "dia": 300, "length": 150, "flow": 2800},
+        {"id": "P2", "u": "J1", "v": "V1", "label": "Hostel Branch Feeder", "dia": 150, "length": 90, "flow": 950},
         {"id": "P3", "u": "V1", "v": "Hostel", "label": "Hostel Service Lateral", "dia": 100, "length": 60, "flow": 950},
-        {"id": "P4", "u": "J1", "v": "J2", "label": "North Ring Main", "dia": 200, "length": 140, "flow": 1200},
-        {"id": "P5", "u": "J1", "v": "J3", "label": "South Ring Main", "dia": 200, "length": 140, "flow": 1100},
-        {"id": "P6", "u": "J2", "v": "V2", "label": "Lab Branch Line", "dia": 150, "length": 80, "flow": 600},
-        {"id": "P7", "u": "V2", "v": "Laboratory", "label": "Lab Service Lateral", "dia": 100, "length": 55, "flow": 600},
-        {"id": "P8", "u": "J3", "v": "V3", "label": "Canteen Branch Line", "dia": 150, "length": 80, "flow": 450},
+        {"id": "P4", "u": "J1", "v": "J2", "label": "North Ring Conduit", "dia": 200, "length": 140, "flow": 1200},
+        {"id": "P5", "u": "J1", "v": "J3", "label": "South Ring Conduit", "dia": 200, "length": 140, "flow": 1100},
+        {"id": "P6", "u": "J2", "v": "V2", "label": "Laboratory Branch Feeder", "dia": 150, "length": 80, "flow": 600},
+        {"id": "P7", "u": "V2", "v": "Laboratory", "label": "Laboratory Service Lateral", "dia": 100, "length": 55, "flow": 600},
+        {"id": "P8", "u": "J3", "v": "V3", "label": "Canteen Branch Feeder", "dia": 150, "length": 80, "flow": 450},
         {"id": "P9", "u": "V3", "v": "Canteen", "label": "Canteen Service Lateral", "dia": 100, "length": 55, "flow": 450},
-        {"id": "P10", "u": "J2", "v": "J5", "label": "North-Central Link", "dia": 180, "length": 100, "flow": 600},
-        {"id": "P11", "u": "J3", "v": "J5", "label": "South-Central Link", "dia": 180, "length": 100, "flow": 650},
+        {"id": "P10", "u": "J2", "v": "J5", "label": "North-Central Cross Link", "dia": 180, "length": 100, "flow": 600},
+        {"id": "P11", "u": "J3", "v": "J5", "label": "South-Central Cross Link", "dia": 180, "length": 100, "flow": 650},
         {"id": "P12", "u": "J5", "v": "J4", "label": "East Header Conduit", "dia": 200, "length": 120, "flow": 1250},
-        {"id": "P13", "u": "J4", "v": "V4", "label": "Academic/Library Line", "dia": 180, "length": 75, "flow": 1250},
-        {"id": "P14", "u": "V4", "v": "Academic", "label": "Academic Lateral", "dia": 120, "length": 60, "flow": 800},
+        {"id": "P13", "u": "J4", "v": "V4", "label": "Academic / Library Valve Header", "dia": 180, "length": 75, "flow": 1250},
+        {"id": "P14", "u": "V4", "v": "Academic", "label": "Academic Block Lateral", "dia": 120, "length": 60, "flow": 800},
         {"id": "P15", "u": "V4", "v": "Library", "label": "Library Lateral", "dia": 100, "length": 50, "flow": 450},
-        {"id": "P16", "u": "J2", "v": "J4", "label": "North-East Bypass", "dia": 150, "length": 180, "flow": 400},
-        {"id": "P17", "u": "J3", "v": "J4", "label": "South-East Bypass", "dia": 150, "length": 180, "flow": 350}
+        {"id": "P16", "u": "J2", "v": "J4", "label": "North-East Bypass Loop", "dia": 150, "length": 180, "flow": 400},
+        {"id": "P17", "u": "J3", "v": "J4", "label": "South-East Bypass Loop", "dia": 150, "length": 180, "flow": 350}
     ]
 
     return nodes, pipelines
